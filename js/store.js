@@ -69,6 +69,23 @@ window.Store = (function () {
     get: function (k) { return state[k]; },
     set: function (k, v) { state[k] = v; save(); },
     level: function () { return levelFor(state.xp); },
+    xpFloor: xpFloor,
+    // Points still needed for the next level (0 at max level).
+    xpToNext: function () {
+      var lvl = this.level();
+      if (lvl >= MAX_LEVEL) return 0;
+      return xpFloor(lvl + 1) - state.xp;
+    },
+    // Progress for an arbitrary xp value, so the result screen can animate
+    // from where the round started to where it ended.
+    progressAt: function (xp) {
+      var lvl = levelFor(xp);
+      if (lvl >= MAX_LEVEL) return 1;
+      var lo = xpFloor(lvl);
+      var hi = xpFloor(lvl + 1);
+      return Math.max(0, Math.min(1, (xp - lo) / (hi - lo)));
+    },
+    levelAt: levelFor,
     // 0..1 progress inside the current level.
     levelProgress: function () {
       var lvl = this.level();

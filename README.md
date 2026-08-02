@@ -37,6 +37,12 @@ crosses, the pan-Arab bands). Roughly one question in six revisits a country
 the window has already passed, so old knowledge does not rot. Flags you get
 wrong come back sooner. Reaching level 30 takes ~13,800 points.
 
+Progression is visible rather than implied: the home screen says how many
+points are left before the next level, the play header carries a level chip,
+and the result screen animates the XP bar from where the round started to where
+it ended — running it to full and refilling on a level-up — then lists what got
+harder ("+8 new countries", "12 questions per round", "look-alike flags").
+
 The countdown can be switched off in Settings. The two drawing modes are never
 timed and never fail you — they always pay, with stars for accuracy — and they
 draw from their own pool of paintable flags rather than the sliding window.

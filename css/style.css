@@ -341,6 +341,14 @@ body[data-fx="high"] .timer.urgent { animation: pulse .5s ease-in-out infinite; 
 .dots i.now { background: var(--sun); transform: scale(1.35); }
 
 .scorebox { display: flex; align-items: center; gap: 8px; font-size: 20px; font-weight: 900; }
+.lvl-chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+  background: var(--sun);
+}
 .scorebox #score { color: var(--sun); }
 .streak {
   display: inline-flex;
@@ -595,6 +603,43 @@ body[data-fx="high"] .stars i.on { animation: star-in .45s cubic-bezier(.34, 1.5
   from { opacity: 0; transform: scale(0) rotate(-90deg); }
   to   { opacity: 1; transform: scale(1) rotate(0); }
 }
+.result-xp {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0 6px;
+}
+.result-xp .levelbar-track { display: block; }
+.result-xp .levelbar-fill { display: block; }
+.result-next {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  opacity: .8;
+}
+
+.unlocks { margin: 12px 0 0; }
+.unlocks-title {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--mint);
+}
+.chip {
+  display: inline-block;
+  margin: 0 5px 5px 0;
+  padding: 7px 13px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+  background: var(--mint);
+}
+body[data-fx="high"] .chip { animation: pop-in .3s cubic-bezier(.34, 1.56, .64, 1) both; }
+.chip:nth-child(3) { animation-delay: .08s; }
+.chip:nth-child(4) { animation-delay: .16s; }
+.chip:nth-child(5) { animation-delay: .24s; }
+
 .result-missed {
   display: flex;
   flex-wrap: wrap;
@@ -769,6 +814,28 @@ body[data-fx="low"] .showcase svg { filter: none; }
   .draw-wrap .swatches,
   .draw-wrap .tools,
   .draw-wrap .brush-sizes { flex: 1 1 100%; }
+}
+
+/* Short screens: the result card can carry stars, an XP bar, unlock chips and
+   a row of missed flags at once. Tighten it so "play again" never lands below
+   the fold. */
+@media (max-height: 700px) {
+  .result-card { padding: 16px 18px; }
+  .stars { font-size: 32px; gap: 6px; }
+  .result-card h2 { font-size: 22px; margin: 2px 0 8px; }
+  .result-line { font-size: 17px; }
+  .result-line.small { font-size: 13px; }
+  .result-xp { margin: 10px 0 4px; }
+  .result-next { font-size: 13px; }
+  .unlocks { margin: 8px 0 0; }
+  .unlocks-title { margin-bottom: 5px; font-size: 13px; }
+  .chip { padding: 5px 10px; font-size: 12px; }
+  .result-missed { margin: 8px 0 2px; }
+  .result-missed figure { width: 56px; }
+  .result-missed figcaption { font-size: 10px; }
+  .result-actions { margin-top: 12px; }
+  .result-actions .big-btn { min-height: 50px; padding: 12px 18px; font-size: 17px; }
+  .result-actions .ghost-btn { min-height: 46px; padding: 10px 20px; margin: 4px auto; }
 }
 
 @media (prefers-reduced-motion: reduce) {

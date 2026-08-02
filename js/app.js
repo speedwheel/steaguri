@@ -176,8 +176,13 @@
   }
 
   function renderLevel() {
-    $('level-num').textContent = window.Store.level();
-    $('xp-num').textContent = window.Store.get('xp');
+    var lvl = window.Store.level();
+    var left = window.Store.xpToNext();
+    $('level-num').textContent = lvl;
+    // Say what it takes to advance, not just how many points exist.
+    $('xp-note').textContent = left > 0
+      ? left + ' ' + window.T('toNext') + ' ' + (lvl + 1)
+      : window.T('maxLevel');
     $('xp-fill').style.width = Math.round(window.Store.levelProgress() * 100) + '%';
   }
 
@@ -244,6 +249,8 @@
       api: null,
     };
     window.CurrentRound = round;
+    round.xpBefore = window.Store.get('xp');
+    $('play-level').textContent = base;
     window.Store.bumpPlays();
     $('score').textContent = '0';
     $('streak').hidden = true;
@@ -329,6 +336,7 @@
     // level the player has already reached.
     if (round.endless) {
       round.level = Math.min(MAX_LEVEL, round.baseLevel + Math.floor(round.index / 5));
+      $('play-level').textContent = round.level;
     }
     var stage = $('stage');
     stage.innerHTML = '';
@@ -406,7 +414,12 @@
     } else {
       window.Store.setStars(round.mode.id, stars);
     }
+    var xpBefore = round.xpBefore;
+    var levelBefore = window.Store.levelAt(xpBefore);
     var levelledUp = window.Store.addXp(round.score);
+    var levelAfter = window.Store.level();
+
+    showXpProgress(xpBefore, levelBefore, levelAfter);
 
     $('result-score').textContent = round.score;
     $('result-title').textContent = levelledUp ? window.T('newLevel')
@@ -427,7 +440,7 @@
     missed.innerHTML = '';
     var uniqueMissed = round.missed.filter(function (cc, idx) {
       return round.missed.indexOf(cc) === idx;
-    }).slice(0, 8);
+    }).slice(0, 6);
     uniqueMissed.forEach(function (cc) {
       var fig = document.createElement('figure');
       var img = document.createElement('img');
@@ -452,6 +465,72 @@
     } else {
       window.FX.play('tap');
     }
+  }
+
+  // Fills the result-screen XP bar from where the round started to where it
+  // ended, so a level-up is something you watch happen rather than a word that
+  // flashes past. On a level-up the bar runs to full, snaps back and refills.
+  function showXpProgress(xpBefore, levelBefore, levelAfter) {
+    var fill = $('result-xp-fill');
+    var badge = $('result-level');
+    var next = $('result-next');
+
+    badge.textContent = levelBefore;
+    fill.style.transition = 'none';
+    fill.style.width = Math.round(window.Store.progressAt(xpBefore) * 100) + '%';
+    void fill.offsetWidth;                       // commit the start position
+    fill.style.transition = '';
+
+    function settle() {
+      badge.textContent = levelAfter;
+      fill.style.width = Math.round(window.Store.levelProgress() * 100) + '%';
+      var left = window.Store.xpToNext();
+      next.textContent = left > 0
+        ? left + ' ' + window.T('toNext') + ' ' + (levelAfter + 1)
+        : window.T('maxLevel');
+    }
+
+    if (levelAfter > levelBefore) {
+      fill.style.width = '100%';
+      setTimeout(function () {
+        fill.style.transition = 'none';
+        fill.style.width = '0%';
+        void fill.offsetWidth;
+        fill.style.transition = '';
+        settle();
+      }, 620);
+    } else {
+      setTimeout(settle, 60);
+    }
+
+    renderUnlocks(levelBefore, levelAfter);
+  }
+
+  // What actually got harder, in words a child can read.
+  function renderUnlocks(before, after) {
+    var box = $('result-unlocks');
+    box.innerHTML = '';
+    if (after <= before) return;
+    var a = levelPlan(before);
+    var b = levelPlan(after);
+    var chips = [];
+    if (b.to > a.to) chips.push('+' + (b.to - a.to) + ' ' + window.T('unlockCountries'));
+    if (b.options > a.options) chips.push(b.options + ' ' + window.T('unlockOptions'));
+    if (b.rounds > a.rounds) chips.push(b.rounds + ' ' + window.T('unlockQuestions'));
+    if (b.lookalikes && !a.lookalikes) chips.push(window.T('unlockLookalikes'));
+    if (b.seconds && !a.seconds) chips.push(window.T('unlockTimer') + ' ' + Math.round(b.seconds) + 's');
+    if (!chips.length) return;
+
+    var title = document.createElement('p');
+    title.className = 'unlocks-title';
+    title.textContent = window.T('unlocked');
+    box.appendChild(title);
+    chips.forEach(function (text) {
+      var chip = document.createElement('span');
+      chip.className = 'chip';
+      chip.textContent = text;
+      box.appendChild(chip);
+    });
   }
 
   // ------------------------------------------------------------- gallery

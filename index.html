@@ -29,7 +29,7 @@
   <div class="levelbar">
     <div class="levelbar-badge"><span data-i18n="level">Nivel</span> <b id="level-num">1</b></div>
     <div class="levelbar-track"><div class="levelbar-fill" id="xp-fill"></div></div>
-    <div class="levelbar-xp"><b id="xp-num">0</b> <span data-i18n="points">puncte</span></div>
+    <div class="levelbar-xp" id="xp-note"></div>
   </div>
 
   <p class="home-hint" data-i18n="chooseMode">Alege un joc!</p>
@@ -45,6 +45,7 @@
     <div class="dots" id="dots"></div>
     <div class="scorebox">
       <span class="streak" id="streak" hidden><b id="streak-num">0</b></span>
+      <span class="lvl-chip"><span data-i18n="levelShort">Niv.</span> <b id="play-level">1</b></span>
       <b id="score">0</b>
     </div>
   </header>
@@ -59,6 +60,13 @@
     <h2 id="result-title">Bravo!</h2>
     <p class="result-line"><b id="result-score">0</b> <span data-i18n="points">puncte</span></p>
     <p class="result-line small" id="result-detail"></p>
+    <div class="result-xp">
+      <span class="levelbar-badge"><span data-i18n="level">Nivel</span> <b id="result-level">1</b></span>
+      <span class="levelbar-track"><i class="levelbar-fill" id="result-xp-fill"></i></span>
+    </div>
+    <p class="result-next" id="result-next"></p>
+    <div class="unlocks" id="result-unlocks"></div>
+
     <div class="result-missed" id="result-missed"></div>
     <div class="result-actions">
       <button class="big-btn" id="btn-again" data-i18n="again">Inca o data</button>

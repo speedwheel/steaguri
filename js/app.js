@@ -232,7 +232,11 @@
     round = {
       mode: mode,
       baseLevel: base,
+      startLevel: base,
       level: base,
+      // A continuous mode never stops on its own - the player leaves when
+      // they have had enough, and the climb carries on next time.
+      continuous: !!mode.continuous,
       total: mode.items || plan.rounds,
       endless: !!mode.endless,
       lives: mode.lives || 0,
@@ -259,9 +263,19 @@
     nextItem();
   }
 
-  // Fixed rounds show a dot per question; the endless mode shows lives left.
+  // Continuous modes show the live level bar, the endless mode shows lives,
+  // fixed rounds show a dot per question.
   function renderProgress() {
     var dots = $('dots');
+    if (round.continuous) {
+      if (dots.className !== 'dots is-climb') {
+        dots.className = 'dots is-climb';
+        dots.innerHTML = '<span class="levelbar-track"><i class="levelbar-fill" id="climb-fill"></i></span>';
+      }
+      $('climb-fill').style.width = Math.round(window.Store.levelProgress() * 100) + '%';
+      $('play-level').textContent = round.level;
+      return;
+    }
     dots.innerHTML = '';
     if (round.endless) {
       dots.className = 'dots is-lives';
@@ -331,7 +345,7 @@
   // ------------------------------------------------------------- items
 
   function nextItem() {
-    if (!round.endless && round.index >= round.total) { endRound(); return; }
+    if (!round.endless && !round.continuous && round.index >= round.total) { endRound(); return; }
     // The endless mode ramps a level every five questions, on top of whatever
     // level the player has already reached.
     if (round.endless) {
@@ -385,6 +399,19 @@
     round.score += gained;
     if (round.endless && !result.correct) round.lives--;
 
+    var delay = result.delay === undefined ? 850 : result.delay;
+
+    // Continuous play banks the points straight away, so the level bar moves
+    // while you watch and the very next question is already harder.
+    if (round.continuous && gained) {
+      var lvlBefore = window.Store.level();
+      if (window.Store.addXp(gained)) {
+        round.level = window.Store.level();
+        showLevelUp(lvlBefore, round.level);
+        delay = 2300;
+      }
+    }
+
     $('score').textContent = round.score;
     var streakEl = $('streak');
     if (round.streak >= 3) {
@@ -396,7 +423,6 @@
     }
     renderProgress();
 
-    var delay = result.delay === undefined ? 850 : result.delay;
     if (round.endless && round.lives <= 0) { setTimeout(endRound, delay); return; }
     setTimeout(nextItem, delay);
   }
@@ -408,7 +434,7 @@
     var stars = accuracy >= 0.9 ? 3 : accuracy >= 0.7 ? 2 : 1;
     var record = false;
 
-    if (round.endless) {
+    if (round.endless || round.continuous) {
       record = window.Store.setBest(round.mode.id, round.correct);
       stars = round.correct >= 30 ? 3 : round.correct >= 15 ? 2 : 1;
     } else {
@@ -416,7 +442,10 @@
     }
     var xpBefore = round.xpBefore;
     var levelBefore = window.Store.levelAt(xpBefore);
-    var levelledUp = window.Store.addXp(round.score);
+    // Continuous play already banked every point as it was earned.
+    var levelledUp = round.continuous
+      ? window.Store.level() > round.startLevel
+      : window.Store.addXp(round.score);
     var levelAfter = window.Store.level();
 
     showXpProgress(xpBefore, levelBefore, levelAfter);
@@ -433,6 +462,14 @@
     var detail = round.mode.scoreText
       ? round.mode.scoreText(round)
       : round.correct + '/' + answered + ' ' + window.T('accuracy');
+    if (round.continuous) {
+      var climbed = window.Store.level() - round.startLevel;
+      detail = round.correct + '/' + answered + ' ' + window.T('accuracy');
+      if (climbed > 0) {
+        detail += '  \u00b7  ' + climbed + ' ' + window.T('sessionLevels') +
+          ' (' + round.startLevel + ' \u2192 ' + window.Store.level() + ')';
+      }
+    }
     if (round.bestStreak >= 3) detail += '  ·  ' + window.T('bestStreak') + ' ' + round.bestStreak;
     $('result-detail').textContent = detail;
 
@@ -507,8 +544,8 @@
   }
 
   // What actually got harder, in words a child can read.
-  function renderUnlocks(before, after) {
-    var box = $('result-unlocks');
+  function renderUnlocks(before, after, target) {
+    var box = target || $('result-unlocks');
     box.innerHTML = '';
     if (after <= before) return;
     var a = levelPlan(before);
@@ -531,6 +568,19 @@
       chip.textContent = text;
       box.appendChild(chip);
     });
+  }
+
+  // Level-up without leaving the run: a card sits over the board for a couple
+  // of seconds, then the next - harder - question comes straight up.
+  function showLevelUp(before, after) {
+    var box = $('levelup');
+    $('levelup-num').textContent = after;
+    renderUnlocks(before, after, $('levelup-unlocks'));
+    box.hidden = false;
+    window.FX.play('level');
+    window.FX.rain(1.2);
+    clearTimeout(showLevelUp.timer);
+    showLevelUp.timer = setTimeout(function () { box.hidden = true; }, 2100);
   }
 
   // ------------------------------------------------------------- gallery
@@ -614,6 +664,7 @@
 
   function leavePlay() {
     stopTimer();
+    $('levelup').hidden = true;
     show('home');
     renderModes();
     renderLevel();
@@ -657,7 +708,11 @@
 
     $('btn-back').addEventListener('click', function () {
       window.FX.play('tap');
-      leavePlay();
+      stopTimer();
+      // A continuous run has no natural end, so stopping is what produces the
+      // summary - but only when there is something to summarise.
+      if ((round.continuous || round.endless) && round.index > 0) endRound();
+      else leavePlay();
     });
     $('btn-again').addEventListener('click', function () {
       window.FX.play('tap');

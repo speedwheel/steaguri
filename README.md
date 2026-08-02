@@ -37,11 +37,16 @@ crosses, the pan-Arab bands). Roughly one question in six revisits a country
 the window has already passed, so old knowledge does not rot. Flags you get
 wrong come back sooner. Reaching level 30 takes ~13,800 points.
 
-Progression is visible rather than implied: the home screen says how many
-points are left before the next level, the play header carries a level chip,
-and the result screen animates the XP bar from where the round started to where
-it ended — running it to full and refilling on a level-up — then lists what got
-harder ("+8 new countries", "12 questions per round", "look-alike flags").
+The three quiz modes are **one continuous climb**, not a series of rounds. They
+never stop on their own: points are banked per answer, the level bar sits in the
+play header and fills as you go, and crossing a level shows a card over the
+board for two seconds — with what just got harder listed on it — before the next,
+harder question. You leave when you have had enough, and the back button then
+shows a session summary ("45/45 correct · 8 levels climbed (1 → 9)"). The climb
+resumes where it left off next time.
+
+The home screen also states how many points remain before the next level, and
+the summary animates the XP bar across everything gained that session.
 
 The countdown can be switched off in Settings. The two drawing modes are never
 timed and never fail you — they always pay, with stars for accuracy — and they

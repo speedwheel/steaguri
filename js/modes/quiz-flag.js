@@ -6,6 +6,7 @@ window.MODES.push({
   color: '#ffd23f',
   dark: '#c98f00',
   titleKey: 'modeFlagName',
+  continuous: true,
   subKey: 'modeFlagNameSub',
 
   makeItem: function (round) {

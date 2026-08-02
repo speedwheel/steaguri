@@ -7,6 +7,7 @@ window.MODES.push({
   color: '#2ee6a8',
   dark: '#0f9c6d',
   titleKey: 'modeShape',
+  continuous: true,
   subKey: 'modeShapeSub',
 
   makeItem: function (round) {

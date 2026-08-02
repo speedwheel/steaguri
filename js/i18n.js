@@ -44,6 +44,10 @@ window.STRINGS = {
 
     modeFlagName: 'Ce steag e?',
     modeFlagNameSub: 'Vezi steagul, alege țara',
+    best: 'record',
+    sessionLevels: 'nivele urcate',
+    stopRun: 'Gata pe azi',
+    keepPlaying: 'Continuă',
     modeNameFlag: 'Găsește steagul',
     modeNameFlagSub: 'Vezi țara, alege steagul',
     modeShape: 'Ce țară e?',
@@ -133,6 +137,10 @@ window.STRINGS = {
 
     modeFlagName: 'Which flag?',
     modeFlagNameSub: 'See a flag, pick the country',
+    best: 'best',
+    sessionLevels: 'levels climbed',
+    stopRun: 'Finish',
+    keepPlaying: 'Keep playing',
     modeNameFlag: 'Find the flag',
     modeNameFlagSub: 'See a country, pick its flag',
     modeShape: 'Which country?',

@@ -44,7 +44,7 @@
     <button class="icon-btn" id="btn-back" aria-label="Inapoi"></button>
     <div class="dots" id="dots"></div>
     <div class="scorebox">
-      <span class="streak" id="streak" hidden><b id="streak-num">0</b></span>
+      <span class="streak" id="streak" hidden><span data-icon="flame"></span><b id="streak-num">0</b></span>
       <span class="lvl-chip"><span data-i18n="levelShort">Niv.</span> <b id="play-level">1</b></span>
       <b id="score">0</b>
     </div>
@@ -125,6 +125,14 @@
 
     <button class="ghost-btn danger" id="btn-reset" data-i18n="reset">Sterge progresul</button>
     <button class="big-btn" id="btn-close-settings" data-i18n="done">Gata</button>
+  </div>
+</div>
+
+<div class="levelup" id="levelup" hidden>
+  <div class="levelup-card">
+    <span class="levelup-kicker" data-i18n="newLevel">Nivel nou!</span>
+    <b class="levelup-num" id="levelup-num">2</b>
+    <div class="unlocks" id="levelup-unlocks"></div>
   </div>
 </div>
 

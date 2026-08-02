@@ -24,6 +24,9 @@ window.ICONS = (function () {
     check:  svg('<path d="m4 12.5 5 5 11-11"/>', true),
     back:   svg('<path d="M20 12H4M4 12l6-6M4 12l6 6"/>', true),
 
+    heart:  svg('<path d="M12 20s-7.5-4.6-7.5-9.6A4.4 4.4 0 0 1 12 7.4a4.4 4.4 0 0 1 7.5 3C19.5 15.4 12 20 12 20z"/>'),
+    bolt:   svg('<path d="M13 2 4.5 13.5H11l-1 8.5 8.5-11.5H12z"/>'),
+
     // build-mode stamps
     fill:    svg('<rect x="3" y="4" width="18" height="16" rx="2"/>'),
     stripeH: svg('<rect x="3" y="10" width="18" height="5" rx="1"/>'),

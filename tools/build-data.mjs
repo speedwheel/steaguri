@@ -354,14 +354,26 @@ async function main() {
               Math.log10(c.area + 10) * 0.9 +
               (REGION_BOOST[c.region] ?? 0)
   }
-  const ranked = countries.slice().sort((a, b) => b.score - a.score)
+  // Hand-pinned countries are forced to the very front of the ranking, so the
+  // first levels are the ones a child actually recognises.
+  const ranked = countries.slice().sort((a, b) => {
+    const pa = TIER1.indexOf(a.cc), pb = TIER1.indexOf(b.cc)
+    if (pa !== -1 || pb !== -1) {
+      if (pa === -1) return 1
+      if (pb === -1) return -1
+      return pa - pb
+    }
+    return b.score - a.score
+  })
   const rank = new Map(ranked.map((c, i) => [c.cc, i]))
   const n = ranked.length
   for (const c of countries) {
-    const r = rank.get(c.cc)
+    // rank 0 = most recognisable. The game slides a window along this list,
+    // so the ranking - not the coarse tier - is what drives difficulty.
+    c.rank = rank.get(c.cc)
     if (TIER1.includes(c.cc)) c.tier = 1
-    else if (r < n * 0.30) c.tier = 2
-    else if (r < n * 0.62) c.tier = 3
+    else if (c.rank < n * 0.30) c.tier = 2
+    else if (c.rank < n * 0.62) c.tier = 3
     else c.tier = 4
   }
   // Anything hand-pinned to tier 1 must not also sit in the tail pool.
@@ -392,7 +404,7 @@ async function main() {
   // --- emit -------------------------------------------------------------
   countries.sort((a, b) => a.en.localeCompare(b.en))
   const rows = countries.map((c) => JSON.stringify({
-    cc: c.cc, en: c.en, ro: c.ro, tier: c.tier, region: c.region, shape: c.shape,
+    cc: c.cc, en: c.en, ro: c.ro, tier: c.tier, rank: c.rank, region: c.region, shape: c.shape,
   }))
   await writeFile(
     path.join(ROOT, 'js', 'data.js'),
@@ -413,8 +425,9 @@ async function main() {
     './', './index.html', './css/style.css',
     './js/icons.js', './js/data.js', './js/shapes.js', './js/lookalikes.js', './js/i18n.js',
     './js/store.js', './js/fx.js', './js/app.js',
-    './js/modes/quiz-flag.js', './js/modes/quiz-name.js', './js/modes/quiz-shape.js',
-    './js/modes/draw-free.js', './js/modes/draw-build.js',
+    './js/modes/quiz-kit.js', './js/modes/quiz-flag.js', './js/modes/quiz-name.js',
+    './js/modes/quiz-shape.js', './js/modes/draw-free.js', './js/modes/draw-build.js',
+    './js/modes/challenge.js',
     './manifest.webmanifest', './assets/icon-192.png', './assets/icon-512.png',
     ...countries.map((c) => `./assets/flags/w320/${c.cc.toLowerCase()}.png`),
     ...countries.map((c) => `./assets/flags/w160/${c.cc.toLowerCase()}.png`),

@@ -6,6 +6,12 @@
   var byCc = {};
   COUNTRIES.forEach(function (c) { byCc[c.cc] = c; });
 
+  // Countries sorted easiest-to-hardest. Difficulty is a window that slides
+  // along this list, so late levels ask about flags nobody just "knows".
+  var BY_RANK = COUNTRIES.slice().sort(function (a, b) { return a.rank - b.rank; });
+  var N = BY_RANK.length;
+  var MAX_LEVEL = window.Store.MAX_LEVEL;
+
   // ------------------------------------------------------------ helpers
 
   function flagUrl(cc, size) {
@@ -23,12 +29,32 @@
 
   function sample(arr) { return arr[(Math.random() * arr.length) | 0]; }
 
-  // Difficulty ladder: which tiers are in play, and how many answers to show.
+  // The difficulty ladder.
+  //
+  //  from..to   window into BY_RANK. It widens to the whole world by level 18,
+  //             and from level 7 the easy end is dropped as well, so the pool
+  //             SHIFTS instead of just growing - by level 30 the 120 most
+  //             recognisable countries are gone and only the hard tail is left.
+  //  options    how many answers are on screen (3 -> 8)
+  //  rounds     questions per round (10 -> 20)
+  //  seconds    per-question countdown, 0 = untimed (kicks in at level 10)
   function levelPlan(level) {
-    if (level <= 3)  return { tiers: [1],          options: 3, lookalikes: false };
-    if (level <= 6)  return { tiers: [1, 2],       options: 4, lookalikes: false };
-    if (level <= 9)  return { tiers: [1, 2, 3],    options: 4, lookalikes: true };
-    return             { tiers: [1, 2, 3, 4], options: 6, lookalikes: true };
+    var L = Math.max(1, Math.min(MAX_LEVEL, level));
+    var grow = Math.min(1, (L - 1) / 17);
+    var to = Math.round(24 * Math.pow(N / 24, grow));
+    var shift = L <= 6 ? 0 : (L - 6) / (MAX_LEVEL - 6);
+    var from = Math.round(shift * N * 0.62);
+    // Never let the window get too narrow to fill an answer board.
+    if (from > to - 30) from = Math.max(0, to - 30);
+    return {
+      level: L,
+      from: from,
+      to: to,
+      options: L <= 2 ? 3 : L <= 5 ? 4 : L <= 9 ? 5 : L <= 14 ? 6 : L <= 21 ? 7 : 8,
+      rounds: L <= 4 ? 10 : L <= 9 ? 12 : L <= 16 ? 15 : L <= 23 ? 18 : 20,
+      lookalikes: L >= 5,
+      seconds: L < 10 ? 0 : Math.max(5, 14 - (L - 10) * 0.45),
+    };
   }
 
   var Game = {
@@ -38,11 +64,28 @@
     sample: sample,
     levelPlan: levelPlan,
 
+    // The countries in play at this level.
     pool: function (level, needShape) {
-      var tiers = levelPlan(level).tiers;
-      return COUNTRIES.filter(function (c) {
-        return tiers.indexOf(c.tier) !== -1 && (!needShape || c.shape);
-      });
+      var plan = levelPlan(level);
+      var list = BY_RANK.slice(plan.from, plan.to);
+      if (needShape) {
+        list = list.filter(function (c) { return c.shape; });
+        // Few of the obscure countries have a usable outline, so widen
+        // downwards until there is enough to build a board from.
+        var i = plan.from;
+        while (list.length < 12 && i > 0) {
+          i -= 10;
+          list = BY_RANK.slice(Math.max(0, i), plan.to).filter(function (c) { return c.shape; });
+        }
+      }
+      return list;
+    },
+
+    // Countries already left behind, used for the occasional refresher.
+    reviewPool: function (level, needShape) {
+      var plan = levelPlan(level);
+      if (!plan.from) return [];
+      return BY_RANK.slice(0, plan.from).filter(function (c) { return !needShape || c.shape; });
     },
 
     // Pick the country to ask about. Mostly weighted towards ones the player
@@ -62,8 +105,8 @@
       return sample(candidates);
     },
 
-    // Wrong answers: confusable flags first on hard levels, then same region,
-    // then anything else in the pool.
+    // Wrong answers: confusable flags first once look-alikes are on, then the
+    // same region, then anything else in the window.
     distractors: function (target, pool, count, level) {
       var plan = levelPlan(level);
       var out = [];
@@ -89,8 +132,8 @@
       if (out.length < count) {
         shuffle(pool).forEach(function (c) { if (out.length < count) add(c); });
       }
-      // Very small pools (level 1 + shape mode) may still fall short - top up
-      // from every country so the board is never half empty.
+      // Small pools (shape mode high up the ladder) may still fall short -
+      // top up from every country so the board is never half empty.
       if (out.length < count) {
         shuffle(COUNTRIES).forEach(function (c) { if (out.length < count) add(c); });
       }
@@ -99,10 +142,15 @@
 
     // One multiple-choice question: the answer plus shuffled options.
     makeChoice: function (round, needShape) {
-      var pool = Game.pool(round.level, needShape);
-      var target = Game.pickTarget(pool, round.used);
-      var count = levelPlan(round.level).options - 1;
-      var options = shuffle([target].concat(Game.distractors(target, pool, count, round.level)));
+      var level = round.level;
+      var pool = Game.pool(level, needShape);
+      var review = Game.reviewPool(level, needShape);
+      // One question in six revisits something already left behind, so old
+      // countries do not rot while the window moves on.
+      var source = (review.length && Math.random() < 0.16) ? review : pool;
+      var target = Game.pickTarget(source, round.used);
+      var count = levelPlan(level).options - 1;
+      var options = shuffle([target].concat(Game.distractors(target, pool, count, level)));
       return { target: target, options: options };
     },
   };
@@ -137,19 +185,25 @@
     var grid = $('mode-grid');
     grid.innerHTML = '';
     window.MODES.forEach(function (mode) {
-      var stars = window.Store.starsFor(mode.id);
       var btn = document.createElement('button');
-      btn.className = 'mode-card';
+      btn.className = 'mode-card' + (mode.endless ? ' is-wide' : '');
       btn.style.setProperty('--card', mode.color);
       btn.style.setProperty('--card-dark', mode.dark);
+
+      var badge;
+      if (mode.endless) {
+        var best = window.Store.bestOf(mode.id);
+        badge = best ? '<b>' + best + '</b>' : '';
+      } else {
+        var stars = window.Store.starsFor(mode.id);
+        badge = (stars ? '<b>' + starStr(stars) + '</b>' : '') + dimStarStr(3 - stars);
+      }
+
       btn.innerHTML =
         '<span class="m-icon">' + (window.ICONS[mode.icon] || '') + '</span>' +
         '<span class="m-title"></span>' +
         '<span class="m-sub"></span>' +
-        '<span class="m-stars">' +
-          (stars ? '<b>' + '★'.repeat(stars) + '</b>' : '') +
-          '☆'.repeat(3 - stars) +
-        '</span>';
+        '<span class="m-stars">' + badge + '</span>';
       btn.querySelector('.m-title').textContent = window.T(mode.titleKey);
       btn.querySelector('.m-sub').textContent = window.T(mode.subKey);
       btn.addEventListener('click', function () {
@@ -160,38 +214,63 @@
     });
   }
 
+  function starStr(n) { var s = ''; for (var i = 0; i < n; i++) s += '★'; return s; }
+  function dimStarStr(n) { var s = ''; for (var i = 0; i < n; i++) s += '☆'; return s; }
+
   // --------------------------------------------------------- round logic
 
   var round = null;
 
   function startRound(mode) {
-    var level = window.Store.level();
+    var base = window.Store.level();
+    var plan = levelPlan(base);
     round = {
       mode: mode,
-      level: level,
-      total: mode.items,
+      baseLevel: base,
+      level: base,
+      total: mode.items || plan.rounds,
+      endless: !!mode.endless,
+      lives: mode.lives || 0,
       index: 0,
       score: 0,
       correct: 0,
       streak: 0,
+      bestStreak: 0,
       used: [],
       missed: [],
       marks: [],
       extra: {},
       startedAt: 0,
+      api: null,
     };
-    window.CurrentRound = round;   // modes that keep their own tally read this
+    window.CurrentRound = round;
     window.Store.bumpPlays();
     $('score').textContent = '0';
     $('streak').hidden = true;
-    renderDots();
+    renderProgress();
     show('play');
     nextItem();
   }
 
-  function renderDots() {
+  // Fixed rounds show a dot per question; the endless mode shows lives left.
+  function renderProgress() {
     var dots = $('dots');
     dots.innerHTML = '';
+    if (round.endless) {
+      dots.className = 'dots is-lives';
+      for (var h = 0; h < (round.mode.lives || 3); h++) {
+        var heart = document.createElement('span');
+        heart.className = 'heart' + (h < round.lives ? '' : ' gone');
+        heart.innerHTML = window.ICONS.heart;
+        dots.appendChild(heart);
+      }
+      var count = document.createElement('b');
+      count.className = 'endless-count';
+      count.textContent = round.index;
+      dots.appendChild(count);
+      return;
+    }
+    dots.className = 'dots';
     for (var i = 0; i < round.total; i++) {
       var d = document.createElement('i');
       if (i < round.index) d.className = round.marks[i] ? 'ok' : 'bad';
@@ -200,28 +279,84 @@
     }
   }
 
+  // ------------------------------------------------------------- timer
+
+  var timerRaf = 0;
+  var timerEnd = 0;
+
+  function stopTimer() {
+    if (timerRaf) { cancelAnimationFrame(timerRaf); timerRaf = 0; }
+    $('timer').hidden = true;
+  }
+
+  function startTimer(seconds) {
+    stopTimer();
+    if (!seconds) return;
+    var bar = $('timer');
+    var fill = $('timer-fill');
+    bar.hidden = false;
+    bar.classList.remove('urgent');
+    fill.style.transform = 'scaleX(1)';
+    timerEnd = Date.now() + seconds * 1000;
+    var total = seconds * 1000;
+    function step() {
+      var left = timerEnd - Date.now();
+      if (left <= 0) {
+        fill.style.transform = 'scaleX(0)';
+        timerRaf = 0;
+        onTimeout();
+        return;
+      }
+      fill.style.transform = 'scaleX(' + (left / total).toFixed(3) + ')';
+      bar.classList.toggle('urgent', left < 3000);
+      timerRaf = requestAnimationFrame(step);
+    }
+    timerRaf = requestAnimationFrame(step);
+  }
+
+  function onTimeout() {
+    $('timer').hidden = true;
+    window.FX.play('wrong');
+    if (round.api && round.api.timeout) round.api.timeout();
+    else resolve({ correct: false, cc: round.current && round.current.target.cc, delay: 1400 });
+  }
+
+  // ------------------------------------------------------------- items
+
   function nextItem() {
-    if (round.index >= round.total) { endRound(); return; }
+    if (!round.endless && round.index >= round.total) { endRound(); return; }
+    // The endless mode ramps a level every five questions, on top of whatever
+    // level the player has already reached.
+    if (round.endless) {
+      round.level = Math.min(MAX_LEVEL, round.baseLevel + Math.floor(round.index / 5));
+    }
     var stage = $('stage');
     stage.innerHTML = '';
     var item = round.mode.makeItem(round);
     round.current = item;
     round.startedAt = Date.now();
-    round.mode.render(stage, item, resolve);
+    round.api = round.mode.render(stage, item, resolve) || null;
+    if (!round.mode.untimed && window.Store.get('timer') !== false) {
+      startTimer(levelPlan(round.level).seconds);
+    }
   }
 
   // Called by a mode once it has shown its own answer feedback.
   // result: { correct, cc, points (optional flat award), delay, noStreak }
   function resolve(result) {
+    stopTimer();
     var elapsed = (Date.now() - round.startedAt) / 1000;
     var gained;
 
     if (result.points !== undefined) {
       gained = result.points;                        // draw / build modes
     } else if (result.correct) {
-      gained = 10 + (elapsed < 5 ? 5 : 0);
+      var plan = levelPlan(round.level);
+      // Harder levels are worth more, so climbing actually pays.
+      gained = 10 + Math.round(plan.level * 1.2) + (elapsed < 5 ? 5 : 0);
       if (!result.noStreak) {
         round.streak++;
+        if (round.streak > round.bestStreak) round.bestStreak = round.streak;
         if (round.streak >= 6) gained = Math.round(gained * 2);
         else if (round.streak >= 3) gained = Math.round(gained * 1.5);
       }
@@ -240,6 +375,7 @@
     round.index++;
     if (result.correct) round.correct++;
     round.score += gained;
+    if (round.endless && !result.correct) round.lives--;
 
     $('score').textContent = round.score;
     var streakEl = $('streak');
@@ -250,19 +386,31 @@
     } else {
       streakEl.hidden = true;
     }
-    renderDots();
+    renderProgress();
 
-    setTimeout(nextItem, result.delay === undefined ? 850 : result.delay);
+    var delay = result.delay === undefined ? 850 : result.delay;
+    if (round.endless && round.lives <= 0) { setTimeout(endRound, delay); return; }
+    setTimeout(nextItem, delay);
   }
 
   function endRound() {
-    var accuracy = round.total ? round.correct / round.total : 0;
+    stopTimer();
+    var answered = round.index;
+    var accuracy = answered ? round.correct / answered : 0;
     var stars = accuracy >= 0.9 ? 3 : accuracy >= 0.7 ? 2 : 1;
-    window.Store.setStars(round.mode.id, stars);
+    var record = false;
+
+    if (round.endless) {
+      record = window.Store.setBest(round.mode.id, round.correct);
+      stars = round.correct >= 30 ? 3 : round.correct >= 15 ? 2 : 1;
+    } else {
+      window.Store.setStars(round.mode.id, stars);
+    }
     var levelledUp = window.Store.addXp(round.score);
 
     $('result-score').textContent = round.score;
     $('result-title').textContent = levelledUp ? window.T('newLevel')
+      : record ? window.T('newRecord')
       : stars === 3 ? window.T('greatJob')
       : window.T('roundDone');
 
@@ -271,14 +419,15 @@
 
     var detail = round.mode.scoreText
       ? round.mode.scoreText(round)
-      : round.correct + '/' + round.total + ' ' + window.T('accuracy');
+      : round.correct + '/' + answered + ' ' + window.T('accuracy');
+    if (round.bestStreak >= 3) detail += '  ·  ' + window.T('bestStreak') + ' ' + round.bestStreak;
     $('result-detail').textContent = detail;
 
     var missed = $('result-missed');
     missed.innerHTML = '';
     var uniqueMissed = round.missed.filter(function (cc, idx) {
       return round.missed.indexOf(cc) === idx;
-    }).slice(0, 6);
+    }).slice(0, 8);
     uniqueMissed.forEach(function (cc) {
       var fig = document.createElement('figure');
       var img = document.createElement('img');
@@ -294,7 +443,7 @@
     show('result');
     renderLevel();
 
-    if (levelledUp) {
+    if (levelledUp || record) {
       window.FX.play('level');
       window.FX.rain(1.4);
     } else if (stars >= 2) {
@@ -346,10 +495,13 @@
     setSeg('seg-lang', window.Store.get('lang'));
     setSeg('seg-sound', window.Store.get('sound') ? 'on' : 'off');
     setSeg('seg-fx', window.Store.get('fx'));
+    setSeg('seg-timer', window.Store.get('timer') === false ? 'off' : 'on');
   }
 
   function setSeg(id, value) {
-    var buttons = $(id).children;
+    var el = $(id);
+    if (!el) return;
+    var buttons = el.children;
     for (var i = 0; i < buttons.length; i++) {
       buttons[i].classList.toggle('sel', buttons[i].getAttribute('data-val') === value);
     }
@@ -367,7 +519,6 @@
 
   // ---------------------------------------------------------------- boot
 
-  // Static chrome icons, painted once at boot.
   function paintIcons() {
     var map = {
       'btn-settings': 'gear',
@@ -380,6 +531,13 @@
       slots[i].innerHTML = window.ICONS[slots[i].getAttribute('data-icon')] || '';
     }
     document.querySelector('.logo-mark').innerHTML = window.ICONS.globe;
+  }
+
+  function leavePlay() {
+    stopTimer();
+    show('home');
+    renderModes();
+    renderLevel();
   }
 
   function boot() {
@@ -407,6 +565,7 @@
       window.FX.setMuted(v !== 'on');
     });
     onSeg('seg-fx', function (v) { window.Store.set('fx', v); window.FX.applyTier(); });
+    onSeg('seg-timer', function (v) { window.Store.set('timer', v === 'on'); });
 
     $('btn-reset').addEventListener('click', function () {
       if (window.confirm(window.T('resetAsk'))) {
@@ -419,8 +578,7 @@
 
     $('btn-back').addEventListener('click', function () {
       window.FX.play('tap');
-      show('home');
-      renderLevel();
+      leavePlay();
     });
     $('btn-again').addEventListener('click', function () {
       window.FX.play('tap');
@@ -428,9 +586,7 @@
     });
     $('btn-result-home').addEventListener('click', function () {
       window.FX.play('tap');
-      show('home');
-      renderModes();
-      renderLevel();
+      leavePlay();
     });
     $('btn-gallery').addEventListener('click', function () {
       window.FX.play('tap');
@@ -440,6 +596,11 @@
     $('btn-gallery-back').addEventListener('click', function () {
       window.FX.play('tap');
       show('home');
+    });
+
+    // Leaving the tab must not let the countdown run down in the background.
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) stopTimer();
     });
 
     if ('serviceWorker' in navigator) {

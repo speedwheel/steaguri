@@ -18,15 +18,16 @@ window.DrawKit = (function () {
     '#8b4513', '#a06bff', '#ff6fb5', '#00a99d',
   ];
 
-  // Pick this round's country from the simple set, respecting the level pool.
+  // Drawing uses its own pool: flags a child can actually paint, widening
+  // with level but never sliding away from the easy ones the way the quiz
+  // window does - there is no point asking anyone to paint Turkmenistan.
   function pickCountry(round) {
-    var pool = window.Game.pool(round.level, false).filter(function (c) {
-      return window.SIMPLE_FLAGS.indexOf(c.cc) !== -1;
-    });
-    if (!pool.length) {
-      pool = window.SIMPLE_FLAGS.map(function (cc) { return window.Game.byCc[cc]; })
-        .filter(Boolean);
-    }
+    var reach = 24 + round.level * 6;
+    var all = window.SIMPLE_FLAGS
+      .map(function (cc) { return window.Game.byCc[cc]; })
+      .filter(Boolean);
+    var pool = all.filter(function (c) { return c.rank <= reach; });
+    if (pool.length < 6) pool = all;
     return window.Game.pickTarget(pool, round.used);
   }
 
@@ -117,6 +118,7 @@ window.MODES.push({
   titleKey: 'modeDraw',
   subKey: 'modeDrawSub',
   items: 3,
+  untimed: true,
 
   scoreText: function (round) {
     return round.total + ' ' + window.T('drawnCount');

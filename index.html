@@ -48,6 +48,7 @@
       <b id="score">0</b>
     </div>
   </header>
+  <div class="timer" id="timer" hidden><i id="timer-fill"></i></div>
   <div class="stage" id="stage"></div>
 </section>
 
@@ -98,6 +99,14 @@
     </div>
 
     <div class="setting-row">
+      <span data-i18n="timer">Cronometru</span>
+      <div class="seg" id="seg-timer">
+        <button data-val="on" data-i18n="timerOn">Pornit</button>
+        <button data-val="off" data-i18n="timerOff">Oprit</button>
+      </div>
+    </div>
+
+    <div class="setting-row">
       <span data-i18n="effects">Efecte</span>
       <div class="seg" id="seg-fx">
         <button data-val="high" data-i18n="fxHigh">Maxim</button>
@@ -120,11 +129,13 @@
 <script src="./js/i18n.js"></script>
 <script src="./js/store.js"></script>
 <script src="./js/fx.js"></script>
+<script src="./js/modes/quiz-kit.js"></script>
 <script src="./js/modes/quiz-flag.js"></script>
 <script src="./js/modes/quiz-name.js"></script>
 <script src="./js/modes/quiz-shape.js"></script>
 <script src="./js/modes/draw-free.js"></script>
 <script src="./js/modes/draw-build.js"></script>
+<script src="./js/modes/challenge.js"></script>
 <script src="./js/app.js"></script>
 </body>
 </html>

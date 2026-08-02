@@ -6,9 +6,11 @@ window.Store = (function () {
     lang: 'ro',
     sound: true,
     fx: 'auto',
+    timer: true,
     xp: 0,
     plays: 0,
     stars: {},    // modeId -> best stars in a round (0..3)
+    best: {},     // modeId -> best score in an endless run
     mastery: {},  // cc -> { s: seen, w: wrong }
     gallery: [],  // { cc, mode, png, t }
   };
@@ -42,13 +44,15 @@ window.Store = (function () {
     }, 250);
   }
 
-  // XP curve: each level costs a bit more than the last, capped at 12.
-  var MAX_LEVEL = 12;
+  // 30 levels. Each one costs more than the last, so the hard end of the
+  // ladder takes real play to reach rather than one lucky round.
+  var MAX_LEVEL = 30;
+  function stepCost(lvl) { return 100 + lvl * 25; }
   function levelFor(xp) {
     var lvl = 1;
     var need = 0;
     while (lvl < MAX_LEVEL) {
-      need += 80 + lvl * 40;
+      need += stepCost(lvl);
       if (xp < need) break;
       lvl++;
     }
@@ -56,7 +60,7 @@ window.Store = (function () {
   }
   function xpFloor(level) {
     var need = 0;
-    for (var l = 1; l < level; l++) need += 80 + l * 40;
+    for (var l = 1; l < level; l++) need += stepCost(l);
     return need;
   }
 
@@ -81,6 +85,12 @@ window.Store = (function () {
       return this.level() > before;
     },
     starsFor: function (modeId) { return state.stars[modeId] || 0; },
+    bestOf: function (modeId) { return state.best[modeId] || 0; },
+    // Returns true when this run beat the stored record.
+    setBest: function (modeId, value) {
+      if (value > (state.best[modeId] || 0)) { state.best[modeId] = value; save(); return true; }
+      return false;
+    },
     setStars: function (modeId, stars) {
       if (stars > (state.stars[modeId] || 0)) { state.stars[modeId] = stars; save(); }
     },

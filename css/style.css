@@ -239,6 +239,10 @@ body[data-fx="high"] .logo-text { text-shadow: 0 3px 0 #c98f00, 0 6px 14px rgba(
   color: rgba(0, 0, 0, .35);
 }
 .mode-card .m-stars b { color: #ff9f1c; font-weight: 900; }
+/* The endless mode gets a full-width card so it reads as its own thing. */
+.mode-card.is-wide { grid-column: 1 / -1; min-height: 96px; }
+.mode-card.is-wide .m-icon { position: absolute; top: 16px; right: 16px; font-size: 44px; opacity: .35; }
+.mode-card.is-wide .m-stars { top: auto; bottom: 12px; right: 16px; font-size: 15px; }
 
 .ghost-btn {
   display: inline-flex;
@@ -278,6 +282,45 @@ body[data-fx="high"] .logo-text { text-shadow: 0 3px 0 #c98f00, 0 6px 14px rgba(
 .big-btn:active { transform: translate3d(0, var(--lift), 0); box-shadow: none; }
 
 /* ---------------------------------------------------------------- play */
+
+.timer {
+  flex: none;
+  height: 10px;
+  margin: 8px 0 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .14);
+  overflow: hidden;
+}
+.timer i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--mint), var(--sky));
+  transform-origin: left center;
+  will-change: transform;
+}
+.timer.urgent i { background: linear-gradient(90deg, #ff9f1c, var(--coral)); }
+body[data-fx="high"] .timer.urgent { animation: pulse .5s ease-in-out infinite; }
+
+.dots.is-lives { align-items: center; gap: 8px; }
+.heart {
+  width: 26px;
+  height: 26px;
+  color: var(--coral);
+}
+.heart.gone { color: rgba(255, 255, 255, .18); }
+.endless-count {
+  margin-left: 6px;
+  font-size: 17px;
+  font-weight: 900;
+  color: var(--sun);
+}
+
+.shape-hint {
+  width: 90px;
+  margin-top: 8px;
+  border-radius: 8px;
+}
 
 .play-head {
   display: flex;
@@ -401,10 +444,18 @@ body[data-fx="high"] .ans.bad { animation: shake .3s ease-in-out both; }
   display: grid;
   gap: 10px;
   align-content: center;
+  min-height: 0;
+  /* Equal rows that share the available height, so a 3x3 board of flags
+     shrinks to fit instead of running off the bottom of a short screen. */
+  grid-auto-rows: 1fr;
   grid-template-columns: repeat(2, 1fr);
 }
 .flag-grid.three { grid-template-columns: repeat(3, 1fr); }
 .flag-pick {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
   padding: 0;
   border: 4px solid transparent;
   border-radius: var(--r-sm);
@@ -414,7 +465,7 @@ body[data-fx="high"] .ans.bad { animation: shake .3s ease-in-out both; }
   line-height: 0;
   box-shadow: 0 5px 0 rgba(0, 0, 0, .3);
 }
-.flag-pick img { width: 100%; height: auto; display: block; }
+.flag-pick img { width: 100%; height: auto; max-height: 100%; display: block; object-fit: contain; }
 .flag-pick:active { transform: translate3d(0, 5px, 0); box-shadow: none; }
 .flag-pick.ok  { border-color: var(--ok); }
 .flag-pick.bad { border-color: var(--bad); }
@@ -710,7 +761,8 @@ body[data-fx="low"] .showcase svg { filter: none; }
   .showcase img { max-height: 54vh; }
   .showcase svg { max-height: 54vh; }
   .answers { flex: 1 1 46%; align-self: center; }
-  .flag-grid { flex: 1 1 100%; }
+  /* A definite height is what lets grid-auto-rows: 1fr bound the tiles. */
+  .flag-grid { flex: 1 1 100%; height: 62vh; }
   /* The drawing modes keep their single column - the canvas needs the width. */
   .draw-wrap { flex: 1 1 100%; flex-direction: row; flex-wrap: wrap; }
   .draw-wrap .canvas-holder { flex: 1 1 60%; }

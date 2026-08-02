@@ -16,6 +16,7 @@ window.MODES.push({
   titleKey: 'modeBuild',
   subKey: 'modeBuildSub',
   items: 3,
+  untimed: true,
 
   scoreText: function (round) {
     var pct = round.extra.matchTotal

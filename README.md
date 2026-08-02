@@ -13,12 +13,33 @@ loaded, Romanian and English.
 | **Ce țară e? / Which country?** | Guess the country from its outline |
 | **Desenează / Draw it** | Paint the flag freehand, with a faint guide to trace |
 | **Construiește / Build it** | Stack stripes, crosses, discs, stars — scored against the real flag |
+| **Provocare / Challenge** | Endless, 3 lives, mixed question types, ramps a level every 5 questions |
 
-Points, streak multipliers and 12 levels. Levels decide which countries appear
-(24 famous ones at level 1, all 197 by level 10) and how many answers are shown.
-From level 7 the wrong answers are pulled from look-alike flags — Romania/Chad,
-Indonesia/Monaco, Ireland/Ivory Coast — which is what makes late levels hard.
-Flags you get wrong come back sooner. The two drawing modes never fail you.
+## Difficulty
+
+All 197 countries are ranked from most to least recognisable. Difficulty is a
+**window that slides along that ranking** — it widens to the whole world by
+level 18, and from level 7 the easy end is dropped too, so the pool *shifts*
+rather than just grows. By level 30 the 120 most familiar countries are gone
+and only the hard tail is left.
+
+| Level | Countries in play | Answers | Questions | Timer |
+|---|---|---|---|---|
+| 1 | 24 most famous | 3 | 10 | — |
+| 5 | 39 easiest | 4 | 12 | — |
+| 10 | ranks 20–73 | 6 | 15 | 14s |
+| 18 | ranks 61–197 | 7 | 18 | 10s |
+| 30 | ranks 122–197 (the 75 obscurest) | 8 | 20 | 5s |
+
+From level 5 the wrong answers are pulled from look-alike flag groups first
+(Romania/Chad/Moldova, Indonesia/Monaco, Ireland/Ivory Coast, the Nordic
+crosses, the pan-Arab bands). Roughly one question in six revisits a country
+the window has already passed, so old knowledge does not rot. Flags you get
+wrong come back sooner. Reaching level 30 takes ~13,800 points.
+
+The countdown can be switched off in Settings. The two drawing modes are never
+timed and never fail you — they always pay, with stars for accuracy — and they
+draw from their own pool of paintable flags rather than the sliding window.
 
 ## Running it
 
@@ -57,6 +78,7 @@ js/icons.js           inline SVG icons (emoji can be missing on old Android)
 js/data.js            GENERATED  countries + names + difficulty tier
 js/shapes.js          GENERATED  167 country outlines as SVG paths
 js/lookalikes.js      hand-written confusable-flag groups
+js/modes/quiz-kit.js  shared answer boards: locking, feedback, timeout path
 js/i18n.js            UI strings, ro + en
 js/store.js           localStorage profile, XP, per-country mastery, gallery
 js/fx.js              sound, confetti, performance tier

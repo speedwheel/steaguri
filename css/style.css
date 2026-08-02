@@ -161,6 +161,9 @@ body[data-fx="high"] .logo-text { text-shadow: 0 3px 0 #c98f00, 0 6px 14px rgba(
   margin: 14px 0 4px;
 }
 .levelbar-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   flex: none;
   padding: 7px 13px;
   border-radius: 999px;
@@ -239,6 +242,20 @@ body[data-fx="high"] .logo-text { text-shadow: 0 3px 0 #c98f00, 0 6px 14px rgba(
   color: rgba(0, 0, 0, .35);
 }
 .mode-card .m-stars b { color: #ff9f1c; font-weight: 900; }
+/* The run record is the number he cares about - make it read as a trophy,
+   not as faint decoration on a bright card. */
+.mode-card .m-stars .rec {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--sun);
+  background: rgba(0, 0, 0, .72);
+}
+.mode-card .m-stars .rec .ico { width: .95em; height: .95em; }
 /* The endless mode gets a full-width card so it reads as its own thing. */
 .mode-card.is-wide { grid-column: 1 / -1; min-height: 96px; }
 .mode-card.is-wide .m-icon { position: absolute; top: 16px; right: 16px; font-size: 44px; opacity: .35; }
@@ -309,7 +326,16 @@ body[data-fx="high"] .timer.urgent { animation: pulse .5s ease-in-out infinite; 
   align-items: center;
   flex-wrap: nowrap;
 }
-.dots.is-climb .levelbar-track { flex: 1; height: 16px; }
+.dots.is-climb .levelbar-track { flex: 1; height: 16px; min-width: 40px; }
+.dots.is-climb .run-hearts { display: flex; gap: 3px; flex: none; }
+.dots.is-climb .run-hearts .heart { width: 20px; height: 20px; }
+.dots.is-climb .run-count {
+  flex: none;
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--paper);
+  opacity: .85;
+}
 .dots.is-climb .levelbar-fill { display: block; }
 .heart {
   width: 26px;
@@ -612,21 +638,6 @@ body[data-fx="high"] .stars i.on { animation: star-in .45s cubic-bezier(.34, 1.5
   from { opacity: 0; transform: scale(0) rotate(-90deg); }
   to   { opacity: 1; transform: scale(1) rotate(0); }
 }
-.result-xp {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 16px 0 6px;
-}
-.result-xp .levelbar-track { display: block; }
-.result-xp .levelbar-fill { display: block; }
-.result-next {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 700;
-  opacity: .8;
-}
-
 .unlocks { margin: 12px 0 0; }
 .unlocks-title {
   margin: 0 0 8px;
@@ -881,8 +892,6 @@ body[data-fx="low"] .showcase svg { filter: none; }
   .result-card h2 { font-size: 22px; margin: 2px 0 8px; }
   .result-line { font-size: 17px; }
   .result-line.small { font-size: 13px; }
-  .result-xp { margin: 10px 0 4px; }
-  .result-next { font-size: 13px; }
   .unlocks { margin: 8px 0 0; }
   .unlocks-title { margin-bottom: 5px; font-size: 13px; }
   .chip { padding: 5px 10px; font-size: 12px; }

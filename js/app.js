@@ -10,7 +10,8 @@
   // along this list, so late levels ask about flags nobody just "knows".
   var BY_RANK = COUNTRIES.slice().sort(function (a, b) { return a.rank - b.rank; });
   var N = BY_RANK.length;
-  var MAX_LEVEL = window.Store.MAX_LEVEL;
+  // The difficulty ladder a single run climbs from start to finish.
+  var MAX_LEVEL = 30;
 
   // ------------------------------------------------------------ helpers
 
@@ -140,6 +141,64 @@
       return out;
     },
 
+    // How hard a run is at this point: the whole ladder is spread across the
+    // countries in the run, so finishing one means climbing all 30 levels.
+    runLevel: function (progress, total) {
+      var step = total / (MAX_LEVEL - 1);
+      return Math.max(1, Math.min(MAX_LEVEL, 1 + Math.floor(progress / step)));
+    },
+
+    // Every country eligible for a run of this mode, easiest first.
+    runPool: function (needShape) {
+      return needShape ? BY_RANK.filter(function (c) { return c.shape; }) : BY_RANK.slice();
+    },
+
+    // A run walks the difficulty ranking from the front. The next question is
+    // drawn from a short window of the easiest countries not yet won, so the
+    // order stays unpredictable while the climb stays strictly easy-to-hard.
+    runChoice: function (round) {
+      var unseen = round.runPool.filter(function (c) { return !round.seen[c.cc]; });
+      if (!unseen.length) return null;
+      var window_ = unseen.slice(0, Math.min(10, unseen.length));
+      // Weight the front of the window, and anything previously missed.
+      var weighted = [];
+      window_.forEach(function (c, i) {
+        var m = window.Store.masteryOf(c.cc);
+        var weight = (window_.length - i) + Math.max(0, m.w) * 2;
+        for (var k = 0; k < Math.max(1, Math.round(weight)); k++) weighted.push(c);
+      });
+      var target = sample(weighted);
+
+      var level = Game.runLevel(round.progress, round.runTotal);
+      var count = levelPlan(level).options - 1;
+      var options = shuffle([target].concat(Game.runDistractors(target, round, count, level)));
+      return { target: target, options: options };
+    },
+
+    // Wrong answers come from look-alikes first, then neighbours on the
+    // difficulty ranking, so they are always plausible for this stage.
+    runDistractors: function (target, round, count, level) {
+      var out = [];
+      var seen = {};
+      seen[target.cc] = true;
+      function add(c) {
+        if (!c || seen[c.cc]) return;
+        seen[c.cc] = true;
+        out.push(c);
+      }
+      if (levelPlan(level).lookalikes) {
+        shuffle(window.LOOKALIKE_MAP[target.cc] || []).forEach(function (cc) {
+          if (out.length < count) add(byCc[cc]);
+        });
+      }
+      var pool = round.runPool;
+      var at = pool.indexOf(target);
+      var near = pool.slice(Math.max(0, at - 25), at + 26);
+      shuffle(near).forEach(function (c) { if (out.length < count) add(c); });
+      shuffle(pool).forEach(function (c) { if (out.length < count) add(c); });
+      return out;
+    },
+
     // One multiple-choice question: the answer plus shuffled options.
     makeChoice: function (round, needShape) {
       var level = round.level;
@@ -175,15 +234,21 @@
     renderLevel();
   }
 
+  // The only thing carried between sessions is the best run.
   function renderLevel() {
-    var lvl = window.Store.level();
-    var left = window.Store.xpToNext();
-    $('level-num').textContent = lvl;
-    // Say what it takes to advance, not just how many points exist.
-    $('xp-note').textContent = left > 0
-      ? left + ' ' + window.T('toNext') + ' ' + (lvl + 1)
-      : window.T('maxLevel');
-    $('xp-fill').style.width = Math.round(window.Store.levelProgress() * 100) + '%';
+    var best = 0;
+    var total = 0;
+    window.MODES.forEach(function (m) {
+      if (!m.continuous) return;
+      var v = window.Store.bestOf(m.id);
+      if (v > best) { best = v; total = Game.runPool(m.id === 'shape-name').length; }
+    });
+    $('level-num').textContent = best;
+    // The badge carries the number, so the note carries the target.
+    $('xp-note').textContent = best
+      ? window.T('outOf') + ' ' + total + ' ' + window.T('countries')
+      : window.T('startHint');
+    $('xp-fill').style.width = (best && total ? (best / total * 100) : 0).toFixed(1) + '%';
   }
 
   function renderModes() {
@@ -196,9 +261,9 @@
       btn.style.setProperty('--card-dark', mode.dark);
 
       var badge;
-      if (mode.endless) {
+      if (mode.endless || mode.continuous) {
         var best = window.Store.bestOf(mode.id);
-        badge = best ? '<b>' + best + '</b>' : '';
+        badge = best ? '<span class="rec">' + window.ICONS.trophy + best + '</span>' : '';
       } else {
         var stars = window.Store.starsFor(mode.id);
         badge = (stars ? '<b>' + starStr(stars) + '</b>' : '') + dimStarStr(3 - stars);
@@ -227,16 +292,20 @@
   var round = null;
 
   function startRound(mode) {
-    var base = window.Store.level();
+    // Every run begins at the beginning. Drawing rounds sit at an easy stage.
+    var base = 1;
     var plan = levelPlan(base);
     round = {
       mode: mode,
       baseLevel: base,
       startLevel: base,
       level: base,
-      // A continuous mode never stops on its own - the player leaves when
-      // they have had enough, and the climb carries on next time.
+      // A run always starts from the easiest country: three mistakes and it
+      // is over, a clean run carries on until every flag in the world is done.
       continuous: !!mode.continuous,
+      seen: {},
+      progress: 0,
+      won: false,
       total: mode.items || plan.rounds,
       endless: !!mode.endless,
       lives: mode.lives || 0,
@@ -252,8 +321,14 @@
       startedAt: 0,
       api: null,
     };
+    if (round.continuous) {
+      round.runPool = Game.runPool(mode.id === 'shape-name');
+      round.runTotal = round.runPool.length;
+      round.lives = mode.lives || 3;
+      round.level = 1;                 // every run starts at the beginning
+      round.startLevel = 1;
+    }
     window.CurrentRound = round;
-    round.xpBefore = window.Store.get('xp');
     $('play-level').textContent = base;
     window.Store.bumpPlays();
     $('score').textContent = '0';
@@ -270,9 +345,20 @@
     if (round.continuous) {
       if (dots.className !== 'dots is-climb') {
         dots.className = 'dots is-climb';
-        dots.innerHTML = '<span class="levelbar-track"><i class="levelbar-fill" id="climb-fill"></i></span>';
+        dots.innerHTML =
+          '<span class="run-hearts" id="run-hearts"></span>' +
+          '<span class="levelbar-track"><i class="levelbar-fill" id="climb-fill"></i></span>' +
+          '<b class="run-count" id="run-count"></b>';
       }
-      $('climb-fill').style.width = Math.round(window.Store.levelProgress() * 100) + '%';
+      var hearts = '';
+      for (var h = 0; h < (round.mode.lives || 3); h++) {
+        hearts += '<span class="heart' + (h < round.lives ? '' : ' gone') + '">' +
+          window.ICONS.heart + '</span>';
+      }
+      $('run-hearts').innerHTML = hearts;
+      var done = Math.min(round.progress, round.runTotal);
+      $('climb-fill').style.width = (done / round.runTotal * 100).toFixed(1) + '%';
+      $('run-count').textContent = done + '/' + round.runTotal;
       $('play-level').textContent = round.level;
       return;
     }
@@ -354,7 +440,8 @@
     }
     var stage = $('stage');
     stage.innerHTML = '';
-    var item = round.mode.makeItem(round);
+    var item = round.continuous ? Game.runChoice(round) : round.mode.makeItem(round);
+    if (!item) { round.won = true; endRound(); return; }   // world completed
     round.current = item;
     round.startedAt = Date.now();
     round.api = round.mode.render(stage, item, resolve) || null;
@@ -401,14 +488,19 @@
 
     var delay = result.delay === undefined ? 850 : result.delay;
 
-    // Continuous play banks the points straight away, so the level bar moves
-    // while you watch and the very next question is already harder.
-    if (round.continuous && gained) {
-      var lvlBefore = window.Store.level();
-      if (window.Store.addXp(gained)) {
-        round.level = window.Store.level();
-        showLevelUp(lvlBefore, round.level);
-        delay = 2300;
+    if (round.continuous) {
+      if (result.correct) {
+        round.seen[result.cc] = true;
+        round.progress++;
+        var lvlBefore = round.level;
+        round.level = Game.runLevel(round.progress, round.runTotal);
+        if (round.level > lvlBefore) {
+          showLevelUp(lvlBefore, round.level);
+          delay = 2300;
+        }
+      } else {
+        // A missed country is not banked - it comes back later in the run.
+        round.lives--;
       }
     }
 
@@ -423,7 +515,10 @@
     }
     renderProgress();
 
-    if (round.endless && round.lives <= 0) { setTimeout(endRound, delay); return; }
+    if ((round.endless || round.continuous) && round.lives <= 0) {
+      setTimeout(endRound, delay);
+      return;
+    }
     setTimeout(nextItem, delay);
   }
 
@@ -434,25 +529,20 @@
     var stars = accuracy >= 0.9 ? 3 : accuracy >= 0.7 ? 2 : 1;
     var record = false;
 
-    if (round.endless || round.continuous) {
+    if (round.continuous) {
+      record = window.Store.setBest(round.mode.id, round.progress);
+      var share = round.progress / round.runTotal;
+      stars = round.won || share >= 0.75 ? 3 : share >= 0.4 ? 2 : 1;
+    } else if (round.endless) {
       record = window.Store.setBest(round.mode.id, round.correct);
       stars = round.correct >= 30 ? 3 : round.correct >= 15 ? 2 : 1;
     } else {
       window.Store.setStars(round.mode.id, stars);
     }
-    var xpBefore = round.xpBefore;
-    var levelBefore = window.Store.levelAt(xpBefore);
-    // Continuous play already banked every point as it was earned.
-    var levelledUp = round.continuous
-      ? window.Store.level() > round.startLevel
-      : window.Store.addXp(round.score);
-    var levelAfter = window.Store.level();
-
-    showXpProgress(xpBefore, levelBefore, levelAfter);
-
     $('result-score').textContent = round.score;
-    $('result-title').textContent = levelledUp ? window.T('newLevel')
+    $('result-title').textContent = round.won ? window.T('worldDone')
       : record ? window.T('newRecord')
+      : round.continuous ? window.T('runOver')
       : stars === 3 ? window.T('greatJob')
       : window.T('roundDone');
 
@@ -463,12 +553,9 @@
       ? round.mode.scoreText(round)
       : round.correct + '/' + answered + ' ' + window.T('accuracy');
     if (round.continuous) {
-      var climbed = window.Store.level() - round.startLevel;
-      detail = round.correct + '/' + answered + ' ' + window.T('accuracy');
-      if (climbed > 0) {
-        detail += '  \u00b7  ' + climbed + ' ' + window.T('sessionLevels') +
-          ' (' + round.startLevel + ' \u2192 ' + window.Store.level() + ')';
-      }
+      detail = round.progress + '/' + round.runTotal + ' ' + window.T('countries') +
+        '  \u00b7  ' + window.T('reachedLevel') + ' ' + round.level +
+        '  \u00b7  ' + window.T('best') + ' ' + window.Store.bestOf(round.mode.id);
     }
     if (round.bestStreak >= 3) detail += '  ·  ' + window.T('bestStreak') + ' ' + round.bestStreak;
     $('result-detail').textContent = detail;
@@ -493,7 +580,7 @@
     show('result');
     renderLevel();
 
-    if (levelledUp || record) {
+    if (round.won || record) {
       window.FX.play('level');
       window.FX.rain(1.4);
     } else if (stars >= 2) {
@@ -504,48 +591,8 @@
     }
   }
 
-  // Fills the result-screen XP bar from where the round started to where it
-  // ended, so a level-up is something you watch happen rather than a word that
-  // flashes past. On a level-up the bar runs to full, snaps back and refills.
-  function showXpProgress(xpBefore, levelBefore, levelAfter) {
-    var fill = $('result-xp-fill');
-    var badge = $('result-level');
-    var next = $('result-next');
-
-    badge.textContent = levelBefore;
-    fill.style.transition = 'none';
-    fill.style.width = Math.round(window.Store.progressAt(xpBefore) * 100) + '%';
-    void fill.offsetWidth;                       // commit the start position
-    fill.style.transition = '';
-
-    function settle() {
-      badge.textContent = levelAfter;
-      fill.style.width = Math.round(window.Store.levelProgress() * 100) + '%';
-      var left = window.Store.xpToNext();
-      next.textContent = left > 0
-        ? left + ' ' + window.T('toNext') + ' ' + (levelAfter + 1)
-        : window.T('maxLevel');
-    }
-
-    if (levelAfter > levelBefore) {
-      fill.style.width = '100%';
-      setTimeout(function () {
-        fill.style.transition = 'none';
-        fill.style.width = '0%';
-        void fill.offsetWidth;
-        fill.style.transition = '';
-        settle();
-      }, 620);
-    } else {
-      setTimeout(settle, 60);
-    }
-
-    renderUnlocks(levelBefore, levelAfter);
-  }
-
   // What actually got harder, in words a child can read.
-  function renderUnlocks(before, after, target) {
-    var box = target || $('result-unlocks');
+  function renderUnlocks(before, after, box) {
     box.innerHTML = '';
     if (after <= before) return;
     var a = levelPlan(before);

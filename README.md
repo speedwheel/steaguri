@@ -15,42 +15,41 @@ loaded, Romanian and English.
 | **Construiește / Build it** | Stack stripes, crosses, discs, stars — scored against the real flag |
 | **Provocare / Challenge** | Endless, 3 lives, mixed question types, ramps a level every 5 questions |
 
-## Difficulty
+## How a run works
 
-All 197 countries are ranked from most to least recognisable. Difficulty is a
-**window that slides along that ranking** — it widens to the whole world by
-level 18, and from level 7 the easy end is dropped too, so the pool *shifts*
-rather than just grows. By level 30 the 120 most familiar countries are gone
-and only the hard tail is left.
+The three quiz modes are **one run through the whole world**, not a series of
+rounds:
 
-| Level | Countries in play | Answers | Questions | Timer |
-|---|---|---|---|---|
-| 1 | 24 most famous | 3 | 10 | — |
-| 5 | 39 easiest | 4 | 12 | — |
-| 10 | ranks 20–73 | 6 | 15 | 14s |
-| 18 | ranks 61–197 | 7 | 18 | 10s |
-| 30 | ranks 122–197 (the 75 obscurest) | 8 | 20 | 5s |
+- Every run starts from the easiest flag. **Three mistakes and it is over** —
+  the next run starts from the beginning again.
+- A clean run keeps going until all **197 countries** (167 in shape mode) have
+  been answered. Finishing is winning.
+- Difficulty is tied to how far the run has got, so a single run climbs the
+  whole ladder from level 1 to level 30.
+- The only thing kept between sessions is the **best run** — the high score.
+  There is no lifetime XP or account level to grind.
 
-From level 5 the wrong answers are pulled from look-alike flag groups first
-(Romania/Chad/Moldova, Indonesia/Monaco, Ireland/Ivory Coast, the Nordic
-crosses, the pan-Arab bands). Roughly one question in six revisits a country
-the window has already passed, so old knowledge does not rot. Flags you get
-wrong come back sooner. Reaching level 30 takes ~13,800 points.
+| Point in the run | Countries being asked | Answers | Timer |
+|---|---|---|---|
+| start | the 24 most famous | 3 | — |
+| ~25% | still widely known | 4–5 | — |
+| ~50% | into the unfamiliar | 6 | 14s |
+| ~75% | obscure | 7 | 8s |
+| finish | the hardest flags in the world | 8 | 5s |
 
-The three quiz modes are **one continuous climb**, not a series of rounds. They
-never stop on their own: points are banked per answer, the level bar sits in the
-play header and fills as you go, and crossing a level shows a card over the
-board for two seconds — with what just got harder listed on it — before the next,
-harder question. You leave when you have had enough, and the back button then
-shows a session summary ("45/45 correct · 8 levels climbed (1 → 9)"). The climb
-resumes where it left off next time.
+The header carries the whole state at a glance: lives left, a bar filling
+towards 197, the country count, the current streak and level. Crossing a level
+shows a card over the board for two seconds listing what just got harder, then
+play continues — the run is never interrupted by a results screen.
 
-The home screen also states how many points remain before the next level, and
-the summary animates the XP bar across everything gained that session.
+Wrong answers are pulled from look-alike flag groups first (Romania/Chad/
+Moldova, Indonesia/Monaco, Ireland/Ivory Coast, the Nordic crosses, the pan-Arab
+bands), then from neighbours on the difficulty ranking, so they are always
+plausible. A missed country is not banked and comes back later in the run.
 
-The countdown can be switched off in Settings. The two drawing modes are never
-timed and never fail you — they always pay, with stars for accuracy — and they
-draw from their own pool of paintable flags rather than the sliding window.
+The countdown can be switched off in Settings. The two drawing modes are short,
+never timed and never fail you — they always pay, with stars for accuracy — and
+they draw from their own pool of paintable flags.
 
 ## Running it
 

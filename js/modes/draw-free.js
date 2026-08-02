@@ -18,16 +18,13 @@ window.DrawKit = (function () {
     '#8b4513', '#a06bff', '#ff6fb5', '#00a99d',
   ];
 
-  // Drawing uses its own pool: flags a child can actually paint, widening
-  // with level but never sliding away from the easy ones the way the quiz
-  // window does - there is no point asking anyone to paint Turkmenistan.
+  // Drawing has its own pool: flags a child can actually paint. It does not
+  // follow the quiz ladder - there is no point asking anyone to paint
+  // Turkmenistan - but it does favour ones previously drawn badly.
   function pickCountry(round) {
-    var reach = 24 + round.level * 6;
-    var all = window.SIMPLE_FLAGS
+    var pool = window.SIMPLE_FLAGS
       .map(function (cc) { return window.Game.byCc[cc]; })
       .filter(Boolean);
-    var pool = all.filter(function (c) { return c.rank <= reach; });
-    if (pool.length < 6) pool = all;
     return window.Game.pickTarget(pool, round.used);
   }
 

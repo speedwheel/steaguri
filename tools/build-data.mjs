@@ -149,6 +149,24 @@ function ringArea(ring) {
   return Math.abs(a / 2)
 }
 
+function bbox(ring) {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+  for (const [x, y] of ring) {
+    if (x < minX) minX = x
+    if (x > maxX) maxX = x
+    if (y < minY) minY = y
+    if (y > maxY) maxY = y
+  }
+  return { minX, minY, maxX, maxY, w: maxX - minX, h: maxY - minY }
+}
+
+function centroid(ring) {
+  const b = bbox(ring)
+  return [(b.minX + b.maxX) / 2, (b.minY + b.maxY) / 2]
+}
+
+function dist(a, b) { return Math.hypot(a[0] - b[0], a[1] - b[1]) }
+
 // Ramer-Douglas-Peucker over a closed ring. A ring starts and ends on the same
 // point, so anchoring RDP on those two gives a zero-length baseline and every
 // point measures as zero distance - split at the far point and simplify both
@@ -238,11 +256,18 @@ function buildShape(geom, arcs) {
   const raw = polygonsOf(geom, arcs).filter((r) => r.length > 3)
   if (!raw.length) return null
 
-  // Keep the mainland plus any island bigger than 2% of it; scattered
-  // territories otherwise render as unguessable specks.
-  const withArea = raw.map((r) => ({ ring: r, area: ringArea(r) }))
-  const biggest = Math.max(...withArea.map((p) => p.area))
-  const kept = withArea.filter((p) => p.area >= biggest * 0.02).map((p) => p.ring)
+  // Keep the mainland plus nearby islands. Two filters, and both matter:
+  //  - area: scattered specks are not guessable.
+  //  - distance: a far-flung territory (French Guiana, Alaska, Easter Island)
+  //    stretches the bounding box until the mainland shrinks to nothing, which
+  //    is exactly what a "guess the country" silhouette must not do.
+  const withArea = raw.map((r) => ({ ring: r, area: ringArea(r), c: centroid(r), box: bbox(r) }))
+  const main = withArea.reduce((a, b) => (b.area > a.area ? b : a))
+  const mainSpan = Math.max(main.box.w, main.box.h)
+  const maxDist = Math.max(4, mainSpan * 0.7)
+  const kept = withArea
+    .filter((p) => p.area >= main.area * 0.02 && dist(p.c, main.c) <= maxDist)
+    .map((p) => p.ring)
 
   const fitted = fitToBox(project(kept), 100)
   const simplified = fitted.polys

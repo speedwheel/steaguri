@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#1b1145">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Steaguri!</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./assets/icon-192.png">
+<link rel="apple-touch-icon" href="./assets/icon-192.png">
+<link rel="stylesheet" href="./css/style.css">
+</head>
+<body data-fx="high">
+
+<canvas id="fxcanvas" aria-hidden="true"></canvas>
+
+<!-- ============================================================ HOME -->
+<section class="screen is-active" id="screen-home">
+  <header class="home-head">
+    <div class="logo">
+      <span class="logo-mark" aria-hidden="true"></span>
+      <h1 class="logo-text">STEAGURI</h1>
+    </div>
+    <button class="icon-btn" id="btn-settings" aria-label="Setari"></button>
+  </header>
+
+  <div class="levelbar">
+    <div class="levelbar-badge"><span data-i18n="level">Nivel</span> <b id="level-num">1</b></div>
+    <div class="levelbar-track"><div class="levelbar-fill" id="xp-fill"></div></div>
+    <div class="levelbar-xp"><b id="xp-num">0</b> <span data-i18n="points">puncte</span></div>
+  </div>
+
+  <p class="home-hint" data-i18n="chooseMode">Alege un joc!</p>
+  <div class="mode-grid" id="mode-grid"></div>
+
+  <button class="ghost-btn" id="btn-gallery"><span data-icon="photos"></span><span data-i18n="gallery">Desenele mele</span></button>
+</section>
+
+<!-- ============================================================ PLAY -->
+<section class="screen" id="screen-play">
+  <header class="play-head">
+    <button class="icon-btn" id="btn-back" aria-label="Inapoi"></button>
+    <div class="dots" id="dots"></div>
+    <div class="scorebox">
+      <span class="streak" id="streak" hidden><b id="streak-num">0</b></span>
+      <b id="score">0</b>
+    </div>
+  </header>
+  <div class="stage" id="stage"></div>
+</section>
+
+<!-- ========================================================== RESULT -->
+<section class="screen" id="screen-result">
+  <div class="result-card">
+    <div class="stars" id="result-stars"><i>★</i><i>★</i><i>★</i></div>
+    <h2 id="result-title">Bravo!</h2>
+    <p class="result-line"><b id="result-score">0</b> <span data-i18n="points">puncte</span></p>
+    <p class="result-line small" id="result-detail"></p>
+    <div class="result-missed" id="result-missed"></div>
+    <div class="result-actions">
+      <button class="big-btn" id="btn-again" data-i18n="again">Inca o data</button>
+      <button class="ghost-btn" id="btn-result-home" data-i18n="home">Acasa</button>
+    </div>
+  </div>
+</section>
+
+<!-- ========================================================= GALLERY -->
+<section class="screen" id="screen-gallery">
+  <header class="play-head">
+    <button class="icon-btn" id="btn-gallery-back" aria-label="Inapoi"></button>
+    <h2 class="head-title" data-i18n="gallery">Desenele mele</h2>
+    <span class="icon-btn is-ghost" aria-hidden="true"></span>
+  </header>
+  <div class="gallery" id="gallery"></div>
+</section>
+
+<!-- ======================================================== SETTINGS -->
+<div class="sheet" id="sheet-settings" hidden>
+  <div class="sheet-card">
+    <h2 data-i18n="settings">Setari</h2>
+
+    <div class="setting-row">
+      <span data-i18n="language">Limba</span>
+      <div class="seg" id="seg-lang">
+        <button data-val="ro">Romana</button>
+        <button data-val="en">English</button>
+      </div>
+    </div>
+
+    <div class="setting-row">
+      <span data-i18n="sound">Sunet</span>
+      <div class="seg" id="seg-sound">
+        <button data-val="on" data-i18n="soundOn">Pornit</button>
+        <button data-val="off" data-i18n="soundOff">Oprit</button>
+      </div>
+    </div>
+
+    <div class="setting-row">
+      <span data-i18n="effects">Efecte</span>
+      <div class="seg" id="seg-fx">
+        <button data-val="high" data-i18n="fxHigh">Maxim</button>
+        <button data-val="auto" data-i18n="fxAuto">Auto</button>
+        <button data-val="low" data-i18n="fxLow">Rapid</button>
+      </div>
+    </div>
+
+    <button class="ghost-btn danger" id="btn-reset" data-i18n="reset">Sterge progresul</button>
+    <button class="big-btn" id="btn-close-settings" data-i18n="done">Gata</button>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="./js/icons.js"></script>
+<script src="./js/data.js"></script>
+<script src="./js/shapes.js"></script>
+<script src="./js/lookalikes.js"></script>
+<script src="./js/i18n.js"></script>
+<script src="./js/store.js"></script>
+<script src="./js/fx.js"></script>
+<script src="./js/modes/quiz-flag.js"></script>
+<script src="./js/modes/quiz-name.js"></script>
+<script src="./js/modes/quiz-shape.js"></script>
+<script src="./js/modes/draw-free.js"></script>
+<script src="./js/modes/draw-build.js"></script>
+<script src="./js/app.js"></script>
+</body>
+</html>

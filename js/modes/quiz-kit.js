@@ -5,7 +5,10 @@ window.QuizKit = (function () {
 
   // Returns { el, api } - api.timeout() is what the countdown calls when it
   // runs out, revealing the answer as if it had been answered wrong.
-  function nameButtons(item, done, onWrong) {
+  // onReveal(chosen, right) runs before scoring, for modes that show the
+  // outcome somewhere else too (the Atlas paints it on the map). The item can
+  // carry its own delayRight / delayWrong when it needs longer to read.
+  function nameButtons(item, done, onWrong, onReveal) {
     var wrap = document.createElement('div');
     wrap.className = 'answers' + (item.options.length > 4 ? ' two-col' : '');
     var locked = false;
@@ -31,7 +34,12 @@ window.QuizKit = (function () {
         if (chosen) window.FX.play('wrong');   // a timeout already played it
         if (onWrong) onWrong();
       }
-      done({ correct: right, cc: item.target.cc, delay: right ? 700 : 1500 });
+      if (onReveal) onReveal(chosen, right);
+      done({
+        correct: right,
+        cc: item.target.cc,
+        delay: right ? (item.delayRight || 700) : (item.delayWrong || 1500),
+      });
     }
 
     item.options.forEach(function (country) {

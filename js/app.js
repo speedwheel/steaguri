@@ -1,5 +1,7 @@
 // Screen router, round loop, scoring and question generation.
-// Modes register themselves in window.MODES before this file runs.
+// Modes register themselves in window.MODES before this file runs. A mode
+// belongs to a game - 'flags' (the default), 'atlas', 'math' or 'logic' - and the hub
+// picks which game's modes the home screen shows.
 (function () {
   var $ = function (id) { return document.getElementById(id); };
   var COUNTRIES = window.COUNTRIES;
@@ -154,9 +156,9 @@
     },
 
     // A run walks the difficulty ranking from the front. The next question is
-    // drawn from a short window of the easiest countries not yet won, so the
+    // drawn from a short window of the easiest items not yet won, so the
     // order stays unpredictable while the climb stays strictly easy-to-hard.
-    runChoice: function (round) {
+    runTarget: function (round) {
       var unseen = round.runPool.filter(function (c) { return !round.seen[c.cc]; });
       if (!unseen.length) return null;
       var window_ = unseen.slice(0, Math.min(10, unseen.length));
@@ -167,7 +169,12 @@
         var weight = (window_.length - i) + Math.max(0, m.w) * 2;
         for (var k = 0; k < Math.max(1, Math.round(weight)); k++) weighted.push(c);
       });
-      var target = sample(weighted);
+      return sample(weighted);
+    },
+
+    runChoice: function (round) {
+      var target = Game.runTarget(round);
+      if (!target) return null;
 
       var level = Game.runLevel(round.progress, round.runTotal);
       var count = levelPlan(level).options - 1;
@@ -217,11 +224,44 @@
 
   // ------------------------------------------------------------- screens
 
-  var screens = ['home', 'play', 'result', 'gallery'];
+  var screens = ['hub', 'home', 'play', 'result', 'gallery'];
   function show(name) {
     screens.forEach(function (s) {
       $('screen-' + s).classList.toggle('is-active', s === name);
     });
+  }
+
+  // ---------------------------------------------------------------- games
+
+  var GAMES = {
+    flags: { logo: 'logoFlags', icon: 'globe', hint: 'startHint' },
+    atlas: { logo: 'logoAtlas', icon: 'compass', hint: 'atlasStartHint' },
+    math: { logo: 'logoMath', icon: 'calc', hint: 'mathStartHint' },
+    logic: { logo: 'logoLogic', icon: 'bulb', hint: 'logicStartHint' },
+  };
+  var currentGame = 'flags';
+
+  function gameOf(mode) { return mode.game || 'flags'; }
+
+  function modesOf(game) {
+    return window.MODES.filter(function (m) { return gameOf(m) === game; });
+  }
+
+  function runTotalOf(mode) {
+    if (mode.runTotal) return mode.runTotal();
+    return Game.runPool(mode.id === 'shape-name').length;
+  }
+
+  // Best continuous run of a game, as [best, total, unit word].
+  function bestRunOf(game) {
+    var first = modesOf(game).filter(function (m) { return m.continuous; })[0];
+    var best = 0, total = 0, unit = (first && first.unitKey) || 'countries';
+    modesOf(game).forEach(function (m) {
+      if (!m.continuous) return;
+      var v = window.Store.bestOf(m.id);
+      if (v > best) { best = v; total = runTotalOf(m); unit = m.unitKey || 'countries'; }
+    });
+    return [best, total, unit];
   }
 
   function applyLang() {
@@ -230,31 +270,55 @@
     for (var i = 0; i < nodes.length; i++) {
       nodes[i].textContent = window.T(nodes[i].getAttribute('data-i18n'));
     }
+    renderHub();
+    renderHome();
+  }
+
+  function renderHome() {
+    var g = GAMES[currentGame];
+    $('logo-text').textContent = window.T(g.logo);
+    document.querySelector('.logo-mark').innerHTML = window.ICONS[g.icon];
+    $('screen-home').setAttribute('data-game', currentGame);
+    $('btn-gallery').hidden = currentGame !== 'flags';
     renderModes();
     renderLevel();
   }
 
   // The only thing carried between sessions is the best run.
   function renderLevel() {
-    var best = 0;
-    var total = 0;
-    window.MODES.forEach(function (m) {
-      if (!m.continuous) return;
-      var v = window.Store.bestOf(m.id);
-      if (v > best) { best = v; total = Game.runPool(m.id === 'shape-name').length; }
-    });
+    var r = bestRunOf(currentGame);
+    var best = r[0], total = r[1];
     $('level-num').textContent = best;
+    $('level-unit').textContent = window.T(r[2]);
     // The badge carries the number, so the note carries the target.
     $('xp-note').textContent = best
-      ? window.T('outOf') + ' ' + total + ' ' + window.T('countries')
-      : window.T('startHint');
+      ? window.T('outOf') + ' ' + total + ' ' + window.T(r[2])
+      : window.T(GAMES[currentGame].hint);
     $('xp-fill').style.width = (best && total ? (best / total * 100) : 0).toFixed(1) + '%';
+  }
+
+  // The front door: one big card per game.
+  function renderHub() {
+    ['flags', 'atlas', 'math', 'logic'].forEach(function (game) {
+      var r = bestRunOf(game);
+      var rec = $('hub-rec-' + game);
+      rec.hidden = !r[0];
+      if (!r[0]) return;
+      rec.innerHTML = window.ICONS.trophy + '<span></span>';
+      rec.lastChild.textContent = r[0] + ' ' + window.T(r[2]);
+    });
+  }
+
+  function openGame(game) {
+    currentGame = game;
+    renderHome();
+    show('home');
   }
 
   function renderModes() {
     var grid = $('mode-grid');
     grid.innerHTML = '';
-    window.MODES.forEach(function (mode) {
+    modesOf(currentGame).forEach(function (mode) {
       var btn = document.createElement('button');
       btn.className = 'mode-card' + (mode.endless ? ' is-wide' : '');
       btn.style.setProperty('--card', mode.color);
@@ -322,7 +386,7 @@
       api: null,
     };
     if (round.continuous) {
-      round.runPool = Game.runPool(mode.id === 'shape-name');
+      round.runPool = mode.runPool ? mode.runPool() : Game.runPool(mode.id === 'shape-name');
       round.runTotal = round.runPool.length;
       round.lives = mode.lives || 3;
       round.level = 1;                 // every run starts at the beginning
@@ -440,18 +504,23 @@
     }
     var stage = $('stage');
     stage.innerHTML = '';
-    var item = round.continuous ? Game.runChoice(round) : round.mode.makeItem(round);
+    stage.className = 'stage';
+    var mode = round.mode;
+    var item = !round.continuous ? mode.makeItem(round)
+      : mode.runChoice ? mode.runChoice(round)
+      : Game.runChoice(round);
     if (!item) { round.won = true; endRound(); return; }   // world completed
     round.current = item;
     round.startedAt = Date.now();
-    round.api = round.mode.render(stage, item, resolve) || null;
-    if (!round.mode.untimed && window.Store.get('timer') !== false) {
-      startTimer(levelPlan(round.level).seconds);
+    round.api = mode.render(stage, item, resolve) || null;
+    if (!mode.untimed && window.Store.get('timer') !== false) {
+      startTimer(mode.seconds ? mode.seconds(round.level, item) : levelPlan(round.level).seconds);
     }
   }
 
   // Called by a mode once it has shown its own answer feedback.
-  // result: { correct, cc, points (optional flat award), delay, noStreak }
+  // result: { correct, cc, points (optional flat award), delay, noStreak,
+  //           mastery: false when cc is a one-off that is not worth storing }
   function resolve(result) {
     stopTimer();
     var elapsed = (Date.now() - round.startedAt) / 1000;
@@ -475,7 +544,7 @@
     }
 
     if (result.cc) {
-      window.Store.seen(result.cc, !result.correct);
+      if (result.mastery !== false) window.Store.seen(result.cc, !result.correct);
       round.used.push(result.cc);
       if (!result.correct) round.missed.push(result.cc);
     }
@@ -540,7 +609,7 @@
       window.Store.setStars(round.mode.id, stars);
     }
     $('result-score').textContent = round.score;
-    $('result-title').textContent = round.won ? window.T('worldDone')
+    $('result-title').textContent = round.won ? window.T(round.mode.doneKey || 'worldDone')
       : record ? window.T('newRecord')
       : round.continuous ? window.T('runOver')
       : stars === 3 ? window.T('greatJob')
@@ -553,7 +622,7 @@
       ? round.mode.scoreText(round)
       : round.correct + '/' + answered + ' ' + window.T('accuracy');
     if (round.continuous) {
-      detail = round.progress + '/' + round.runTotal + ' ' + window.T('countries') +
+      detail = round.progress + '/' + round.runTotal + ' ' + window.T(round.mode.unitKey || 'countries') +
         '  \u00b7  ' + window.T('reachedLevel') + ' ' + round.level +
         '  \u00b7  ' + window.T('best') + ' ' + window.Store.bestOf(round.mode.id);
     }
@@ -566,6 +635,11 @@
       return round.missed.indexOf(cc) === idx;
     }).slice(0, 6);
     uniqueMissed.forEach(function (cc) {
+      if (round.mode.missedFigure) {
+        var custom = round.mode.missedFigure(cc);
+        if (custom) missed.appendChild(custom);
+        return;
+      }
       var fig = document.createElement('figure');
       var img = document.createElement('img');
       img.src = flagUrl(cc, 'w160');
@@ -579,6 +653,7 @@
 
     show('result');
     renderLevel();
+    renderHub();
 
     if (round.won || record) {
       window.FX.play('level');
@@ -595,14 +670,18 @@
   function renderUnlocks(before, after, box) {
     box.innerHTML = '';
     if (after <= before) return;
-    var a = levelPlan(before);
-    var b = levelPlan(after);
     var chips = [];
-    if (b.to > a.to) chips.push('+' + (b.to - a.to) + ' ' + window.T('unlockCountries'));
-    if (b.options > a.options) chips.push(b.options + ' ' + window.T('unlockOptions'));
-    if (b.rounds > a.rounds) chips.push(b.rounds + ' ' + window.T('unlockQuestions'));
-    if (b.lookalikes && !a.lookalikes) chips.push(window.T('unlockLookalikes'));
-    if (b.seconds && !a.seconds) chips.push(window.T('unlockTimer') + ' ' + Math.round(b.seconds) + 's');
+    if (round && round.mode.unlocks) {
+      chips = round.mode.unlocks(before, after);
+    } else {
+      var a = levelPlan(before);
+      var b = levelPlan(after);
+      if (b.to > a.to) chips.push('+' + (b.to - a.to) + ' ' + window.T('unlockCountries'));
+      if (b.options > a.options) chips.push(b.options + ' ' + window.T('unlockOptions'));
+      if (b.rounds > a.rounds) chips.push(b.rounds + ' ' + window.T('unlockQuestions'));
+      if (b.lookalikes && !a.lookalikes) chips.push(window.T('unlockLookalikes'));
+      if (b.seconds && !a.seconds) chips.push(window.T('unlockTimer') + ' ' + Math.round(b.seconds) + 's');
+    }
     if (!chips.length) return;
 
     var title = document.createElement('p');
@@ -698,6 +777,8 @@
   function paintIcons() {
     var map = {
       'btn-settings': 'gear',
+      'btn-hub-settings': 'gear',
+      'btn-home-back': 'back',
       'btn-back': 'back',
       'btn-gallery-back': 'back',
     };
@@ -706,7 +787,28 @@
     for (var i = 0; i < slots.length; i++) {
       slots[i].innerHTML = window.ICONS[slots[i].getAttribute('data-icon')] || '';
     }
-    document.querySelector('.logo-mark').innerHTML = window.ICONS.globe;
+    $('hub-flags-art').innerHTML = ['RO', 'BR', 'JP', 'CA'].map(function (cc) {
+      return '<img src="' + flagUrl(cc, 'w160') + '" alt="">';
+    }).join('');
+    if (window.ATLAS_META) {
+      // Pins on the hub's world: a hint of what the game is about.
+      var b = window.ATLAS_META.thumbBox;
+      $('hub-atlas-art').innerHTML =
+        '<svg viewBox="' + b[0] + ' ' + b[3] + ' ' + (b[2] - b[0]) + ' ' + (b[1] - b[3]) + '" aria-hidden="true">' +
+        '<path d="' + window.ATLAS_META.thumb + '"></path>' +
+        [[50, -91], [-200, -80], [235, -60], [-110, 30], [270, 75]].map(function (p) {
+          return '<circle class="pin" cx="' + p[0] + '" cy="' + p[1] + '" r="9"></circle>';
+        }).join('') + '</svg>';
+    }
+    // A hand of number tiles, fanned like the flags - with a clock in it.
+    $('hub-math-art').innerHTML =
+      '<span class="tile t-plus">+</span><span class="tile t-minus">\u2212</span>' +
+      '<span class="tile t-clock">' + window.MathPics.clock(10, 10) + '</span>' +
+      '<span class="tile t-times">\u00d7</span>';
+    // A pattern waiting for its next piece.
+    $('hub-logic-art').innerHTML = ['circle|r|1|1|0|0', 'triangle|b|1|1|0|0', 'circle|r|1|1|0|0'].map(function (t) {
+      return '<span class="tile">' + window.LogicPics.tok(t) + '</span>';
+    }).join('') + '<span class="tile t-ask">?</span>';
   }
 
   function leavePlay() {
@@ -715,6 +817,24 @@
     show('home');
     renderModes();
     renderLevel();
+    renderHub();
+  }
+
+  function openSettings() {
+    window.FX.play('tap');
+    $('sheet-settings').hidden = false;
+  }
+
+  // The Atlas brings a megabyte of map with it, fetched on first use.
+  function openAtlas() {
+    if (window.Atlas.ready()) { openGame('atlas'); return; }
+    var card = $('hub-atlas');
+    card.classList.add('is-loading');
+    window.Atlas.load(function (ok) {
+      card.classList.remove('is-loading');
+      if (ok) openGame('atlas');
+      else window.FX.toast(window.T('loadFailed'), 2400);
+    });
   }
 
   function boot() {
@@ -724,9 +844,28 @@
     window.FX.applyTier();
     window.FX.startMeasuring();
 
-    $('btn-settings').addEventListener('click', function () {
+    $('btn-settings').addEventListener('click', openSettings);
+    $('btn-hub-settings').addEventListener('click', openSettings);
+    $('hub-flags').addEventListener('click', function () {
       window.FX.play('tap');
-      $('sheet-settings').hidden = false;
+      openGame('flags');
+    });
+    $('hub-atlas').addEventListener('click', function () {
+      window.FX.play('tap');
+      openAtlas();
+    });
+    $('hub-math').addEventListener('click', function () {
+      window.FX.play('tap');
+      openGame('math');
+    });
+    $('hub-logic').addEventListener('click', function () {
+      window.FX.play('tap');
+      openGame('logic');
+    });
+    $('btn-home-back').addEventListener('click', function () {
+      window.FX.play('tap');
+      renderHub();
+      show('hub');
     });
     $('btn-close-settings').addEventListener('click', function () {
       window.FX.play('tap');
@@ -782,6 +921,15 @@
     // Leaving the tab must not let the countdown run down in the background.
     document.addEventListener('visibilitychange', function () {
       if (document.hidden) stopTimer();
+    });
+
+    // Rotating the tablet resizes the map under the question in play.
+    var resizeTimer = 0;
+    window.addEventListener('resize', function () {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function () {
+        if (window.Atlas.ready()) window.AtlasMap.get().resize();
+      }, 120);
     });
 
     if ('serviceWorker' in navigator) {

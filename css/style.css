@@ -113,7 +113,7 @@ body[data-fx="high"] .screen.is-active { animation: screen-in .22s ease-out both
   justify-content: space-between;
   gap: 10px;
 }
-.logo { display: flex; align-items: center; gap: 10px; }
+.logo { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
 .logo-mark { font-size: 40px; display: inline-block; color: var(--sky); }
 body[data-fx="high"] .logo-mark { animation: bob 3.2s ease-in-out infinite; }
 @keyframes bob {
@@ -300,10 +300,18 @@ body[data-fx="high"] .logo-text { text-shadow: 0 3px 0 #c98f00, 0 6px 14px rgba(
 
 /* ---------------------------------------------------------------- play */
 
+/* The countdown floats just under the header instead of taking a row of its
+   own: it comes and goes between questions, and must not shove the board
+   (or the Atlas map, which measures itself) up and down when it does. */
 .timer {
-  flex: none;
+  position: absolute;
+  top: 66px;
+  top: calc(max(10px, env(safe-area-inset-top)) + 56px);
+  left: 14px;
+  right: 14px;
+  z-index: 5;
   height: 10px;
-  margin: 8px 0 0;
+  margin: 0;
   border-radius: 999px;
   background: rgba(255, 255, 255, .14);
   overflow: hidden;
@@ -336,7 +344,15 @@ body[data-fx="high"] .timer.urgent { animation: pulse .5s ease-in-out infinite; 
   color: var(--paper);
   opacity: .85;
 }
-.dots.is-climb .levelbar-fill { display: block; }
+/* .dots i above styles the round's question dots; the bar must not inherit
+   their 12px circle and grey fill. */
+.dots.is-climb .levelbar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--mint), var(--sky));
+  transform: none;
+}
 .heart {
   width: 26px;
   height: 26px;
@@ -406,7 +422,7 @@ body[data-fx="high"] .streak { animation: pulse 1s ease-in-out infinite; }
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 10px 0 4px;
+  padding: 20px 0 4px;
   min-height: 0;
 }
 
@@ -828,6 +844,879 @@ body[data-fx="high"].shake { animation: screen-shake .3s ease-in-out; }
   60%      { transform: translate3d(5px, -3px, 0); }
 }
 
+/* ----------------------------------------------------------------- hub */
+
+#screen-hub { gap: 6px; }
+.hub-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 2px 0;
+}
+.hub-kicker {
+  display: block;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  opacity: .65;
+}
+.hub-title h1 {
+  margin: 2px 0 0;
+  font-size: 34px;
+  line-height: 1.05;
+  font-weight: 900;
+  color: var(--sun);
+}
+body[data-fx="high"] .hub-title h1 { text-shadow: 0 3px 0 #c98f00, 0 6px 14px rgba(0, 0, 0, .45); }
+
+/* Same trick as the home menu: centred when there is room, never clipped. */
+.hub-grid {
+  margin: auto 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  padding: 14px 0 10px;
+}
+
+.game-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  text-align: left;
+  font-family: inherit;
+  color: var(--ink);
+  cursor: pointer;
+  background: var(--card);
+  box-shadow: 0 var(--lift) 0 var(--card-dark);
+  transition: transform .1s ease-out, box-shadow .1s ease-out;
+}
+.game-card.is-flags { --card: #ffd23f; --card-dark: #c98f00; }
+.game-card.is-atlas { --card: #4cc9f0; --card-dark: #1d84a8; }
+.game-card:active { transform: translate3d(0, var(--lift), 0); box-shadow: 0 0 0 var(--card-dark); }
+.game-card:focus-visible,
+.mode-card:focus-visible,
+.amap-btn:focus-visible,
+.ans:focus-visible { outline: 4px solid #fff; outline-offset: 3px; }
+@media (hover: hover) {
+  .game-card:hover { filter: brightness(1.05); }
+  .mode-card:hover { filter: brightness(1.05); }
+  .amap-btn:hover { background: rgba(23, 18, 58, .95); }
+}
+
+.game-art {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 150px;
+  flex: none;
+  background: rgba(0, 0, 0, .1);
+}
+/* A hand of four flags, fanned out. */
+.flags-art img {
+  width: 34%;
+  max-width: 150px;
+  margin: 0 -7%;
+  border-radius: 8px;
+  border: 4px solid #fff;
+  background: #fff;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, .28);
+}
+.flags-art img:nth-child(1) { transform: rotate(-12deg) translate3d(0, 10px, 0); }
+.flags-art img:nth-child(2) { transform: rotate(-4deg); position: relative; z-index: 1; }
+.flags-art img:nth-child(3) { transform: rotate(5deg); position: relative; z-index: 2; }
+.flags-art img:nth-child(4) { transform: rotate(13deg) translate3d(0, 10px, 0); position: relative; z-index: 3; }
+.atlas-art { background: #1e3a78; }
+.atlas-art svg { width: 100%; height: 100%; }
+.atlas-art path { fill: #efe6cf; stroke: none; }
+.atlas-art .pin { fill: #ff5d73; stroke: #fff; stroke-width: 4; }
+
+.game-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 18px 16px;
+}
+.game-title { font-size: 30px; line-height: 1; font-weight: 900; }
+.game-sub { font-size: 15px; font-weight: 700; opacity: .75; }
+.game-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
+.game-tag {
+  padding: 4px 11px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 900;
+  background: rgba(0, 0, 0, .12);
+}
+.game-tag.is-hard { color: #fff; background: #17123a; }
+.game-rec {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 11px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--sun);
+  background: rgba(0, 0, 0, .72);
+}
+.game-rec .ico { width: .95em; height: .95em; }
+.game-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--coral);
+  box-shadow: 0 3px 0 #b32d40;
+}
+body[data-fx="high"] .game-badge { animation: pulse 1.6s ease-in-out infinite; }
+.game-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 18px;
+  font-weight: 900;
+  color: #fff;
+  background: rgba(23, 18, 58, .78);
+}
+.game-card.is-loading .game-loading { display: flex; }
+.game-loading i {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 4px solid rgba(255, 255, 255, .3);
+  border-top-color: #fff;
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* The Atlas has no gallery button, which is what normally closes the
+   centring pair under the menu - let the grid do it instead. */
+#screen-home[data-game="atlas"] .mode-grid { margin-bottom: auto; }
+
+/* Atlas home: the logo takes the map colours. */
+#screen-home[data-game="atlas"] .logo-text { color: var(--sky); }
+body[data-fx="high"] #screen-home[data-game="atlas"] .logo-text { text-shadow: 0 3px 0 #1d84a8, 0 6px 14px rgba(0, 0, 0, .45); }
+#screen-home[data-game="atlas"] .logo-mark { color: var(--sun); }
+
+/* --------------------------------------------------------------- atlas */
+
+.stage.is-atlas { gap: 0; align-items: stretch; }
+.atlas-play {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+.atlas-prompt { margin: 0; }
+.atlas-prompt .ask-lead {
+  display: block;
+  font-size: 15px;
+  font-weight: 800;
+  opacity: .7;
+}
+.atlas-prompt .ask-name {
+  display: inline-block;
+  margin-top: 2px;
+  font-size: 30px;
+  line-height: 1.1;
+  font-weight: 900;
+  color: var(--sun);
+}
+body[data-fx="high"] .atlas-prompt .ask-name { animation: pop-in .3s cubic-bezier(.34, 1.56, .64, 1) both; }
+
+.atlas-mapbox {
+  position: relative;
+  flex: 1;
+  min-height: 220px;
+  border-radius: 22px;
+  overflow: hidden;
+  background: #1e3a78;
+  border: 3px solid rgba(255, 255, 255, .16);
+}
+body[data-fx="high"] .atlas-mapbox { box-shadow: 0 10px 30px rgba(0, 0, 0, .45); }
+
+.amap {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  touch-action: none;
+  cursor: crosshair;
+}
+.amap-svg { position: absolute; display: block; will-change: transform; }
+
+.am-sea { fill: #1e3a78; }
+.am-grat path { fill: none; stroke: rgba(255, 255, 255, .07); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.am-land .c {
+  fill: #efe6cf;
+  stroke: #a8946d;
+  stroke-width: .8;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.am-land .other { fill: #d9d3c1; }
+.am-lakes path { fill: #1e3a78; stroke: none; }
+/* Province questions: the country in focus is lifted off its neighbours. */
+.amap[data-layer="region"] .am-land .c { fill: #d8d0ba; stroke: #b5a687; }
+.am-scene .u {
+  fill: #fff7e2;
+  stroke: #7c6646;
+  stroke-width: 1;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.am-rivers path {
+  fill: none;
+  stroke: #5fd3ff;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: .85;
+  vector-effect: non-scaling-stroke;
+}
+.am-ranges path { fill: rgba(168, 106, 50, .3); stroke: rgba(120, 70, 25, .35); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.am-peaks path { fill: #6e4f30; stroke: #fff7e2; stroke-width: 1; vector-effect: non-scaling-stroke; }
+.am-dots circle {
+  fill: rgba(255, 255, 255, .12);
+  stroke: rgba(255, 247, 226, .8);
+  stroke-width: 1.4;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Yellow is always "the thing being asked", mint "here it is", coral "you
+   picked this". The same three colours as the answer buttons. */
+.mk { vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+.mk-area.target { fill: #ffd23f; stroke: #3b2a00; stroke-width: 2.5; }
+.mk-area.ok { fill: #2ee6a8; stroke: #053d2a; stroke-width: 2.5; }
+.mk-area.bad { fill: #ff5d73; stroke: #5a0a18; stroke-width: 2.5; }
+.mk-casing { fill: none; stroke: #241800; stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.mk-line { fill: none; stroke-width: 5; stroke-linecap: round; }
+.mk-line.target { stroke: #ffd23f; }
+.mk-line.ok { stroke: #2ee6a8; }
+.mk-line.bad { stroke: #ff5d73; }
+.mk-peak { stroke-width: 2; }
+.mk-peak.target { fill: #ffd23f; stroke: #241800; }
+.mk-peak.ok { fill: #2ee6a8; stroke: #053d2a; }
+.mk-peak.bad { fill: #ff5d73; stroke: #5a0a18; }
+
+.amap-labels { position: absolute; inset: 0; pointer-events: none; }
+.amap-label, .amap-beacon { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+.amap-label span {
+  position: absolute;
+  left: 0;
+  bottom: 14px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 6px 13px;
+  border-radius: 999px;
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--ink);
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .35);
+}
+.amap-label span::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  margin-left: -6px;
+  border: 6px solid transparent;
+  border-bottom: 0;
+  border-top-color: inherit;
+}
+.amap-label.ok span { color: #053d2a; background: var(--mint); border-color: var(--mint); }
+.amap-label.bad span { color: #fff; background: var(--coral); border-color: var(--coral); }
+.amap-label.ok span::after { border-top-color: var(--mint); }
+.amap-label.bad span::after { border-top-color: var(--coral); }
+
+.amap-beacon i {
+  position: absolute;
+  left: -24px;
+  top: -24px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 4px solid var(--sun);
+}
+body[data-fx="high"] .amap-beacon i,
+body[data-fx="auto"] .amap-beacon i { animation: beacon 1.15s ease-out infinite; }
+@keyframes beacon {
+  from { transform: scale(.35); opacity: 1; }
+  to   { transform: scale(1.35); opacity: 0; }
+}
+.amap-beacon b {
+  position: absolute;
+  left: -15px;
+  top: -15px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 4px solid var(--sun);
+  box-shadow: 0 0 0 2px #241800, inset 0 0 0 2px #241800;
+}
+.amap-beacon.ok i, .amap-beacon.ok b { border-color: var(--mint); }
+.amap-beacon.ok b { box-shadow: 0 0 0 2px #053d2a, inset 0 0 0 2px #053d2a; }
+.amap-beacon.tap b { display: none; }
+/* Where the finger landed on a miss: a small coral target. */
+.amap-labels .amap-beacon.tap i {
+  left: -9px;
+  top: -9px;
+  width: 18px;
+  height: 18px;
+  border-width: 3px;
+  border-color: #fff;
+  background: var(--coral);
+  animation: none;
+}
+
+.amap-ctl {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.amap-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  font-size: 22px;
+  color: #fff;
+  border: 0;
+  border-radius: 14px;
+  background: rgba(23, 18, 58, .78);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, .3);
+  cursor: pointer;
+}
+.amap-btn:active { transform: scale(.92); }
+
+.atlas-hint, .atlas-note {
+  position: absolute;
+  left: 50%;
+  z-index: 3;
+  max-width: calc(100% - 130px);
+  transform: translateX(-50%);
+  pointer-events: none;
+  text-align: center;
+  border-radius: 999px;
+  font-weight: 900;
+}
+.atlas-hint {
+  bottom: 12px;
+  padding: 8px 15px;
+  font-size: 13px;
+  color: #fff;
+  background: rgba(23, 18, 58, .78);
+}
+.atlas-note {
+  bottom: 12px;
+  max-width: calc(100% - 24px);
+  padding: 9px 16px;
+  font-size: 16px;
+  color: #fff;
+  background: var(--coral);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .35);
+}
+body[data-fx="high"] .atlas-note { animation: pop-in .3s cubic-bezier(.34, 1.56, .64, 1) both; }
+
+.atlas-answers { flex: none; }
+
+/* Result screen: what was missed on the map. */
+.result-missed .missed-atlas { width: 86px; }
+.missed-atlas img { border-radius: 6px; }
+.missed-ico {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 56px;
+  padding: 5px;
+  font-size: 30px;
+  border-radius: 10px;
+  color: var(--sky);
+  background: rgba(255, 255, 255, .1);
+}
+.missed-ico svg { width: 100%; height: 100%; }
+.missed-ico .sil-area { fill: var(--sun); stroke: none; }
+.missed-ico .sil-line {
+  fill: none;
+  stroke: var(--sky);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+/* -------------------------------------------------------------- maths */
+
+.game-card.is-math { --card: #2ee6a8; --card-dark: #0f9c6d; }
+
+/* Number tiles fanned like the flags, one of them a clock. */
+.math-art .tile,
+.logic-art .tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 92px;
+  height: 92px;
+  margin: 0 -9px;
+  border: 4px solid #fff;
+  border-radius: 20px;
+  font-size: 60px;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--ink);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, .28);
+}
+.math-art .t-plus  { background: var(--sun); transform: rotate(-12deg) translate3d(0, 10px, 0); }
+.math-art .t-minus { background: var(--sky); transform: rotate(-4deg); position: relative; z-index: 1; }
+.math-art .t-clock { padding: 3px; background: #fff; border-radius: 50%; transform: rotate(5deg); position: relative; z-index: 2; }
+.math-art .t-times { color: #fff; background: var(--grape); transform: rotate(13deg) translate3d(0, 10px, 0); position: relative; z-index: 3; }
+.math-art .t-clock svg { width: 100%; height: 100%; }
+
+#screen-home[data-game="math"] .mode-grid { margin-bottom: auto; }
+#screen-home[data-game="math"] .logo-text { color: var(--mint); }
+body[data-fx="high"] #screen-home[data-game="math"] .logo-text { text-shadow: 0 3px 0 #0f9c6d, 0 6px 14px rgba(0, 0, 0, .45); }
+#screen-home[data-game="math"] .logo-mark { color: var(--sun); }
+
+.stage.is-math { gap: 0; }
+.math-play {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+}
+.math-prompt { margin: 0; }
+.math-prompt.is-story {
+  max-width: 34em;
+  margin: 0 auto;
+  font-size: 19px;
+  line-height: 1.35;
+}
+.math-prompt .ask-lead { display: block; font-size: 15px; font-weight: 800; opacity: .7; }
+.math-prompt .ask-name {
+  display: inline-block;
+  margin-top: 2px;
+  font-size: 32px;
+  line-height: 1.1;
+  font-weight: 900;
+  color: var(--sun);
+}
+body[data-fx="high"] .math-prompt .ask-name { animation: pop-in .3s cubic-bezier(.34, 1.56, .64, 1) both; }
+
+/* The board: a page of the squared maths notebook, red margin and all. */
+.math-card {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 18px 18px 18px 42px;
+  border-radius: var(--r-lg);
+  color: var(--ink);
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(rgba(76, 201, 240, .24) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(76, 201, 240, .24) 1px, transparent 1px);
+  background-size: 24px 24px;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, .3);
+  overflow: hidden;
+}
+.math-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 26px;
+  width: 2px;
+  background: rgba(255, 93, 115, .65);
+}
+body[data-fx="high"] .math-card { box-shadow: 0 6px 0 rgba(0, 0, 0, .3), 0 14px 30px rgba(0, 0, 0, .35); }
+body[data-fx="high"] .math-card.pop { animation: pop-in .3s cubic-bezier(.34, 1.56, .64, 1) both; }
+
+.m-expr {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px .26em;
+  max-width: 100%;
+  font-size: 62px;
+  font-weight: 900;
+  line-height: 1.15;
+  text-align: center;
+}
+.m-expr.is-mid { font-size: 46px; }
+.m-expr.is-long { font-size: 32px; }
+.m-op { color: #6b3fc4; }
+.m-op.is-comma { margin-left: -.24em; }
+.m-unit { font-size: .5em; font-weight: 800; color: #4b4570; }
+.m-words { font-size: .56em; font-weight: 800; line-height: 1.2; }
+.m-frac .frac { font-size: .8em; }
+/* A step of the working per line. */
+.m-sep { flex-basis: 100%; height: 0; }
+.m-blank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5em;
+  min-height: 1.18em;
+  padding: 0 .2em;
+  border: 4px dashed #a06bff;
+  border-radius: 14px;
+  color: #6b3fc4;
+  background: rgba(160, 107, 255, .09);
+}
+.m-blank.is-typing { border-style: solid; border-color: #6b3fc4; color: var(--ink); background: #fff; }
+.m-blank.is-typing.is-empty::after {
+  content: "";
+  width: 4px;
+  height: .9em;
+  border-radius: 2px;
+  background: #6b3fc4;
+}
+body[data-fx="high"] .m-blank.is-typing.is-empty::after { animation: caret 1s steps(1) infinite; }
+@keyframes caret { 50% { opacity: 0; } }
+.m-blank.is-ok { border: 4px solid #0f9c6d; color: #063a29; background: var(--mint); }
+body[data-fx="high"] .m-blank.is-ok { animation: pop-in .28s cubic-bezier(.34, 1.56, .64, 1) both; }
+.m-was {
+  font-size: .7em;
+  color: #d6334c;
+  text-decoration-thickness: .1em;
+}
+.m-explain {
+  max-width: 100%;
+  padding: 8px 18px;
+  border: 2px solid rgba(15, 156, 109, .4);
+  border-radius: 18px;
+  color: #0b5c40;
+  background: rgba(46, 230, 168, .2);
+}
+.m-explain .m-expr { font-size: 24px; gap: 2px .3em; }
+.m-explain .m-op { color: inherit; opacity: .8; }
+.m-explain .m-unit { color: inherit; }
+body[data-fx="high"] .m-explain { animation: pop-in .3s cubic-bezier(.34, 1.56, .64, 1) both; }
+.m-settime {
+  padding: 4px 18px;
+  border-radius: 999px;
+  font-size: 30px;
+  font-weight: 900;
+  color: #063a29;
+  background: var(--mint);
+}
+
+/* -------- pictures on the card */
+
+.m-pic {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex: 0 1 auto;
+  min-height: 0;
+  max-width: 100%;
+}
+.m-pic svg { display: block; max-width: 100%; }
+.pic-frames { width: 400px; height: auto; }
+.pic-array { height: 170px; width: auto; }
+.pic-blocks { height: 140px; width: auto; }
+.pic-pie { width: 180px; height: 180px; }
+.pic-bar { width: 340px; height: auto; }
+.pic-line { width: 480px; height: auto; }
+.pic-clock { width: 240px; height: 240px; }
+
+.fr { fill: #fff; stroke: var(--ink); stroke-width: 3; }
+.fr-l { stroke: rgba(23, 18, 58, .35); stroke-width: 2; }
+.dot.a { fill: var(--sky); stroke: #1d84a8; stroke-width: 2; }
+.dot.b { fill: #ff9f1c; stroke: #b86b00; stroke-width: 2; }
+.dot.gone { fill: #e3def0; stroke: #b9b2cf; stroke-width: 2; }
+.dot-x { stroke: #d6334c; stroke-width: 3.5; stroke-linecap: round; }
+.pic-array .row { fill: rgba(160, 107, 255, .12); }
+
+.bk-h { fill: #cdb8ff; stroke: #6b3fc4; stroke-width: 1.6; }
+.bk-t { fill: #a5e6f8; stroke: #1d84a8; stroke-width: 1.6; }
+.bk-u { fill: #ffe27a; stroke: #b88400; stroke-width: 1.4; }
+.bk-l { fill: none; stroke: rgba(23, 18, 58, .3); stroke-width: .8; }
+
+.pie-s { fill: #fff; stroke: var(--ink); stroke-width: 3; stroke-linejoin: round; }
+.pie-s.on { fill: var(--grape); }
+.pie-rim { fill: none; stroke: var(--ink); stroke-width: 4; }
+
+.nl-axis { stroke: var(--ink); stroke-width: 4; stroke-linecap: round; }
+.nl-tick { stroke: var(--ink); stroke-width: 2.5; }
+.nl-tick.b { stroke-width: 4; }
+.nl-n, .nl-at { font-family: var(--font); font-size: 22px; font-weight: 900; text-anchor: middle; fill: var(--ink); }
+.nl-n.mid { font-size: 16px; opacity: .55; }
+.nl-pin { fill: #ff5d73; }
+.nl-dot { fill: #ff5d73; stroke: #fff; stroke-width: 3; }
+.nl-at { fill: #d6334c; }
+
+/* The clock: coral hour hand, blue minute hand, as on a classroom clock. */
+.ck-rim { fill: var(--ink); }
+.ck-face { fill: #fff; }
+.ck-t { stroke: rgba(23, 18, 58, .28); stroke-width: 1.6; }
+.ck-t.f { stroke: rgba(23, 18, 58, .62); stroke-width: 2; }
+.ck-t.b { stroke: var(--ink); stroke-width: 3.6; }
+.ck-n { font-family: var(--font); font-size: 25px; font-weight: 900; text-anchor: middle; fill: var(--ink); }
+.ck-h line { stroke: #ff5d73; stroke-width: 11; stroke-linecap: round; }
+.ck-m line { stroke: #1d84a8; stroke-width: 7; stroke-linecap: round; }
+.ck-hub { fill: var(--ink); }
+.ck-knob { stroke: #fff; stroke-width: 3; }
+.ck-h .ck-knob { fill: #ff5d73; }
+.ck-m .ck-knob { fill: #1d84a8; }
+.pic-clock.is-set { width: 300px; height: 300px; touch-action: none; cursor: grab; }
+.pic-clock.is-grab-h .ck-h line { stroke-width: 14; }
+.pic-clock.is-grab-m .ck-m line { stroke-width: 10; }
+.pic-clock.is-grab-h, .pic-clock.is-grab-m { cursor: grabbing; }
+.pic-clock.is-ok .ck-rim { fill: #0f9c6d; }
+.pic-clock.is-bad .ck-rim { fill: #d6334c; }
+.pic-clock.is-bad .ck-hands { opacity: .3; }
+.ck-ghost line { stroke: #0f9c6d; stroke-linecap: round; }
+.ck-ghost .ck-h line { stroke-width: 11; }
+.ck-ghost .ck-m line { stroke-width: 7; }
+
+.ck-period {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  font-size: 16px;
+  font-weight: 900;
+}
+.ck-period .ico { width: 36px; height: 36px; }
+.ck-period.is-morning { color: #7a4f00; background: #fff1c9; }
+.ck-period.is-afternoon { color: #8a3f00; background: #ffd6a3; }
+.ck-period.is-evening { color: var(--sun); background: var(--violet); }
+
+.pic-clocks { display: flex; align-items: center; gap: 8px; }
+.pic-clocks .pic-clock { width: 160px; height: 160px; }
+.clocks-arrow { display: block; font-size: 34px; color: #6b3fc4; transform: scaleX(-1); }
+
+/* Lei: a note per value in roughly its real colour; coins in brass,
+   copper and nickel. */
+.pic-money {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  max-width: 560px;
+}
+.bill {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex: none;
+  width: 112px;
+  height: 58px;
+  padding: 5px 9px;
+  border: 2px solid rgba(0, 0, 0, .28);
+  border-radius: 8px;
+  color: #fff;
+  background-color: var(--bill, #7aa86b);
+  background-image: linear-gradient(135deg, rgba(255, 255, 255, .22), transparent 55%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, .08) 0 2px, transparent 2px 7px);
+  box-shadow: 0 3px 0 rgba(0, 0, 0, .2);
+  overflow: hidden;
+}
+.bill b { font-size: 27px; line-height: 1; font-weight: 900; text-shadow: 0 1px 0 rgba(0, 0, 0, .25); }
+.bill small { font-size: 11px; line-height: 1; font-weight: 900; letter-spacing: 1px; }
+.bill-seal {
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  width: 34px;
+  height: 34px;
+  margin-top: -17px;
+  border: 3px solid rgba(255, 255, 255, .6);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .2);
+}
+.bill.v1 { --bill: #6f9e62; }
+.bill.v5 { --bill: #8a68c4; }
+.bill.v10 { --bill: #d45f7a; }
+.bill.v50 { --bill: #e0ad32; color: #3d2b00; }
+.bill.v50 b { text-shadow: none; }
+.bill.v50 .bill-seal { border-color: rgba(61, 43, 0, .4); }
+.bill.v100 { --bill: #4a80c2; }
+.bill.v200 { --bill: #c07740; }
+.bill.v500 { --bill: #7489a2; }
+.coin {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border: 3px solid rgba(0, 0, 0, .25);
+  border-radius: 50%;
+  color: #4a3300;
+  background: #e5bf55;
+  box-shadow: inset 0 0 0 4px rgba(255, 255, 255, .35), 0 3px 0 rgba(0, 0, 0, .2);
+}
+.coin b { font-size: 20px; line-height: 1; font-weight: 900; }
+.coin small { font-size: 8px; line-height: 1.1; font-weight: 900; letter-spacing: .5px; }
+.coin.c1 { width: 46px; height: 46px; }
+.coin.c1 b { font-size: 17px; }
+.coin.c5 { width: 50px; height: 50px; color: #4a2200; background: #d08a55; }
+.coin.c10 { width: 54px; height: 54px; color: #283040; background: #c8ced8; }
+.coin.c50 { width: 62px; height: 62px; }
+
+.pic-shop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 14px 26px;
+}
+/* What you are paying with sits in its own dashed "wallet". */
+.shop-pay {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px;
+  border: 2px dashed rgba(15, 156, 109, .55);
+  border-radius: 16px;
+  background: rgba(46, 230, 168, .16);
+}
+.shop-it { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.shop-icons { display: flex; }
+.shop-ico { width: 76px; height: 76px; }
+.shop-it.is-many .shop-ico { width: 58px; height: 58px; margin: 0 -5px; }
+.tag {
+  position: relative;
+  padding: 4px 12px 4px 20px;
+  border-radius: 6px 14px 14px 6px;
+  font-size: 18px;
+  font-weight: 900;
+  white-space: nowrap;
+  color: var(--ink);
+  background: var(--sun);
+  box-shadow: 0 2px 0 #c98f00;
+}
+.tag::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  margin-top: -3.5px;
+  border-radius: 50%;
+  background: var(--paper);
+}
+
+.frac { display: inline-flex; flex-direction: column; align-items: center; line-height: 1; vertical-align: middle; }
+.frac i { font-style: normal; padding: 0 .14em; }
+.frac i:first-child { padding-bottom: .05em; border-bottom: .09em solid currentColor; }
+.frac i:last-child { padding-top: .05em; }
+
+/* -------- answering */
+
+.math-side { flex: none; }
+.math-answers { grid-template-columns: 1fr 1fr; }
+.math-answers.n3, .math-answers.n6 { grid-template-columns: repeat(3, 1fr); }
+.math-answers.n6.is-text { grid-template-columns: 1fr 1fr; }
+.math-answers .ans { min-height: 70px; font-size: 30px; font-weight: 900; line-height: 1.1; }
+.math-answers.is-text .ans { min-height: 62px; font-size: 18px; line-height: 1.2; }
+.math-answers.is-sign .ans { font-size: 46px; }
+
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.key {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 60px;
+  padding: 0;
+  font-family: inherit;
+  font-size: 30px;
+  font-weight: 900;
+  color: var(--ink);
+  border: 0;
+  border-radius: var(--r-md);
+  background: var(--paper);
+  box-shadow: 0 5px 0 rgba(0, 0, 0, .3);
+  cursor: pointer;
+  transition: transform .1s ease-out, box-shadow .1s ease-out, opacity .15s;
+}
+.key:active { transform: translate3d(0, 5px, 0); box-shadow: none; }
+.key .ico { width: 28px; height: 28px; }
+.key.is-del { color: var(--paper); background: rgba(255, 255, 255, .16); }
+.key.is-ok { font-size: 18px; color: #063a29; background: var(--mint); box-shadow: 0 5px 0 #0f9c6d; }
+.key.is-ok .ico { width: 22px; height: 22px; }
+.key:disabled { opacity: .4; cursor: default; }
+.key:disabled:active { transform: none; box-shadow: 0 5px 0 #0f9c6d; }
+.keypad.is-locked .key { opacity: .45; pointer-events: none; }
+.key:focus-visible, .set-go:focus-visible { outline: 4px solid #fff; outline-offset: 3px; }
+@media (hover: hover) {
+  .key:not(:disabled):hover { filter: brightness(1.06); }
+}
+
+.set-hint { margin: 0 0 12px; text-align: center; font-size: 15px; font-weight: 700; opacity: .75; }
+.set-go { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.set-go .ico { width: 24px; height: 24px; }
+
+/* Result screen: what was missed, written out with the answer in. */
+.result-missed .missed-math { width: auto; min-width: 74px; max-width: 250px; }
+.mm-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  color: var(--ink);
+  background: var(--paper);
+}
+.mm-tile .m-expr { font-size: 17px; gap: 0 .25em; }
+.mm-tile .m-ans { color: #0f9c6d; }
+.mm-tile .m-sep { display: none; }
+.mm-tile.is-clock { width: 74px; height: 74px; margin: 0 auto; padding: 3px; border-radius: 50%; }
+.mm-tile.is-clock svg { width: 100%; height: 100%; }
+.missed-math figcaption { font-size: 13px; font-weight: 900; }
+
 /* -------------------------------------------------------- low fx tier */
 
 body[data-fx="low"] .mode-card,
@@ -842,15 +1731,124 @@ body[data-fx="low"] .result-card { backdrop-filter: none; background: #2a1b63; }
 body[data-fx="low"] .showcase img,
 body[data-fx="low"] .canvas-stack { box-shadow: none; }
 body[data-fx="low"] .showcase svg { filter: none; }
+body[data-fx="low"] .math-card,
+body[data-fx="low"] .key { box-shadow: none; }
+body[data-fx="low"] .key:active { transform: scale(.97); }
 
 /* --------------------------------------------------------- big screens */
 
 @media (min-width: 700px) {
   .screen { padding-left: 24px; padding-right: 24px; }
+  .timer { left: 24px; right: 24px; }
   .stage { max-width: 760px; width: 100%; margin: 0 auto; }
+  .stage.is-atlas { max-width: 1400px; }
   .answers.two-col { gap: 14px; }
   .logo-text { font-size: 38px; }
   .mode-grid { max-width: 900px; width: 100%; margin: 0 auto; }
+  .home-hint { max-width: 900px; width: 100%; margin-left: auto; margin-right: auto; padding: 0 4px; }
+  .hub-head, .hub-grid { max-width: 980px; width: 100%; margin-left: auto; margin-right: auto; }
+  .hub-grid { grid-template-columns: 1fr 1fr; gap: 22px; }
+  .math-art .tile, .logic-art .tile { width: 116px; height: 116px; font-size: 74px; margin: 0 -11px; }
+  .hub-title h1 { font-size: 44px; }
+  .game-art { height: 210px; }
+  .game-title { font-size: 36px; }
+  .game-sub { font-size: 17px; }
+  .atlas-prompt .ask-name { font-size: 36px; }
+}
+
+/* Four games on the hub: side by side on a wide screen, a column of wide
+   cards (picture left, words right) on a portrait tablet. */
+@media (min-width: 1000px) {
+  .hub-head, .hub-grid { max-width: 1400px; }
+  .hub-grid { grid-template-columns: repeat(4, 1fr); gap: 18px; }
+  .game-art { height: 180px; }
+  .game-title { font-size: 32px; }
+  .math-art .tile, .logic-art .tile { width: 72px; height: 72px; font-size: 46px; margin: 0 -6px; border-radius: 16px; }
+}
+@media (min-width: 700px) and (max-width: 999px) {
+  .hub-head, .hub-grid { max-width: 760px; }
+  .hub-grid { grid-template-columns: 1fr; gap: 18px; }
+  .game-card { flex-direction: row; }
+  .game-art { width: 46%; height: 170px; }
+  .math-art .tile, .logic-art .tile { width: 78px; height: 78px; font-size: 50px; margin: 0 -7px; }
+  .game-body { flex: 1; justify-content: center; padding: 18px 22px; }
+}
+/* A phone has to fit all four without scrolling: two by two. */
+@media (max-width: 699px) {
+  .hub-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .hub-title h1 { font-size: 30px; }
+  .game-sub { font-size: 13px; line-height: 1.25; }
+  .game-tag, .game-rec { padding: 3px 8px; font-size: 11px; }
+  .game-badge { top: 8px; right: 8px; padding: 4px 9px; font-size: 11px; }
+  #screen-home[data-game="math"] .logo-text { font-size: 23px; letter-spacing: .5px; }
+  .logo { min-width: 0; }
+  /* Two columns of topics: an odd one out takes the whole row instead of
+     leaving a hole next to it. */
+  .mode-grid { grid-template-columns: 1fr 1fr; }
+  .mode-card:not(.is-wide):nth-last-child(2):nth-child(odd) { grid-column: 1 / -1; min-height: 96px; }
+  .game-art { height: 104px; }
+  .flags-art img { width: 34%; border-width: 3px; }
+  .math-art .tile, .logic-art .tile { width: 46px; height: 46px; font-size: 30px; margin: 0 -4px; border-width: 3px; border-radius: 11px; }
+  .logic-art .tile { padding: 6px; }
+  .game-body { padding: 9px 12px 11px; }
+  .game-title { font-size: 21px; }
+  .game-foot { margin-top: 5px; }
+  .m-expr { font-size: 52px; }
+  .m-expr.is-mid { font-size: 38px; }
+  .m-expr.is-long { font-size: 27px; }
+  .math-card { padding: 14px 12px 14px 34px; gap: 12px; }
+  .math-card::before { left: 20px; }
+  .pic-clock { width: 200px; height: 200px; }
+  .pic-clock.is-set { width: 260px; height: 260px; }
+  .pic-clocks .pic-clock { width: 120px; height: 120px; }
+  .pic-array { height: 130px; }
+  .pic-blocks { height: 110px; }
+  .pic-pie { width: 150px; height: 150px; }
+  .bill { width: 92px; height: 48px; }
+  .bill b { font-size: 22px; }
+  .bill-seal { width: 26px; height: 26px; margin-top: -13px; }
+  .shop-ico { width: 60px; height: 60px; }
+  .shop-it.is-many .shop-ico { width: 46px; height: 46px; }
+  .math-answers .ans { min-height: 62px; font-size: 26px; }
+  .math-answers.is-text .ans { font-size: 16px; }
+  .key { min-height: 54px; }
+}
+
+/* A tablet has room for a bigger notebook page: everything on it grows. */
+@media (min-width: 700px) and (min-height: 600px) {
+  .math-answers .ans { min-height: 76px; font-size: 34px; }
+  .math-answers.is-text .ans { font-size: 20px; }
+  .math-answers.is-sign .ans { font-size: 54px; }
+  .key { min-height: 68px; }
+  .math-prompt.is-story { font-size: 21px; }
+  .m-expr { font-size: 76px; }
+  .m-expr.is-mid { font-size: 56px; }
+  .m-expr.is-long { font-size: 38px; }
+  .m-explain .m-expr { font-size: 28px; }
+  .pic-frames { width: 460px; }
+  .pic-array { height: 210px; }
+  .pic-blocks { height: 170px; }
+  .pic-pie { width: 220px; height: 220px; }
+  .pic-bar { width: 400px; }
+  .pic-line { width: 540px; }
+  .pic-clock { width: 290px; height: 290px; }
+  .pic-clock.is-set { width: 380px; height: 380px; }
+  .pic-clocks .pic-clock { width: 200px; height: 200px; }
+  .pic-money { max-width: 640px; gap: 12px; }
+  .bill { width: 138px; height: 70px; }
+  .bill b { font-size: 33px; }
+  .bill small { font-size: 13px; }
+  .bill-seal { width: 42px; height: 42px; margin-top: -21px; }
+  .coin { transform: scale(1.22); margin: 6px; }
+  .shop-ico { width: 96px; height: 96px; }
+  .shop-it.is-many .shop-ico { width: 72px; height: 72px; }
+  .tag { font-size: 21px; }
+}
+/* Portrait tablet: the page is as tall as its sum, and the page and the
+   answers sit together in the middle of the screen. */
+@media (min-width: 700px) and (orientation: portrait) {
+  .math-play { justify-content: center; }
+  .math-card { flex: 0 1 auto; min-height: 50vh; }
 }
 
 /* Landscape tablet: flag on the left, answers on the right. Stops the answer
@@ -875,6 +1873,43 @@ body[data-fx="low"] .showcase svg { filter: none; }
   .answers { flex: 1 1 46%; align-self: center; }
   /* A definite height is what lets grid-auto-rows: 1fr bound the tiles. */
   .flag-grid { flex: 1 1 100%; height: 62vh; }
+  /* The Atlas lays out its own board: map on the left, answers on the right. */
+  .stage.is-atlas { flex-direction: column; flex-wrap: nowrap; align-content: stretch; align-items: stretch; max-width: 1400px; }
+  .stage.is-atlas .prompt { width: auto; }
+  .atlas-play.kind-pick {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(250px, 32%);
+    grid-template-rows: auto minmax(0, 1fr);
+    column-gap: 18px;
+    row-gap: 10px;
+  }
+  .atlas-play.kind-pick .atlas-prompt { grid-column: 1; grid-row: 1; }
+  .atlas-play.kind-pick .atlas-mapbox { grid-column: 1; grid-row: 2; }
+  .atlas-play.kind-pick .atlas-answers {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    align-self: center;
+    grid-template-columns: 1fr;
+  }
+  /* Maths: the notebook page on the left, answers or keypad on the right. */
+  .stage.is-math { flex-direction: column; flex-wrap: nowrap; align-content: stretch; align-items: stretch; max-width: 1180px; }
+  .stage.is-math .prompt { width: auto; }
+  .math-play {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(300px, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    column-gap: 26px;
+    row-gap: 14px;
+  }
+  .math-prompt { grid-column: 1 / -1; grid-row: 1; }
+  .math-card { grid-column: 1; grid-row: 2; }
+  .math-side { grid-column: 2; grid-row: 2; align-self: center; }
+  .math-side .answers { flex: none; }
+  .math-answers.n2, .math-answers.n3, .math-answers.n4 { grid-template-columns: 1fr; gap: 12px; }
+  .math-answers.n6 { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .math-answers.is-sign { grid-template-columns: repeat(3, 1fr); }
+  .math-answers.is-sign .ans { min-height: 96px; }
+  .pic-clock.is-set { width: min(56vh, 420px); height: min(56vh, 420px); }
   /* The drawing modes keep their single column - the canvas needs the width. */
   .draw-wrap { flex: 1 1 100%; flex-direction: row; flex-wrap: wrap; }
   .draw-wrap .canvas-holder { flex: 1 1 60%; }
@@ -905,4 +1940,525 @@ body[data-fx="low"] .showcase svg { filter: none; }
 
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
+}
+
+/* --------------------------------------------------------------- logic */
+
+.game-card.is-logic { --card: #a06bff; --card-dark: #6b3fc4; }
+
+/* A pattern waiting for its next piece, fanned like the flags. */
+.logic-art .tile { padding: 12px; background: #fff; }
+.logic-art .tile svg { width: 100%; height: 100%; }
+.logic-art .tile:nth-child(1) { transform: rotate(-12deg) translate3d(0, 10px, 0); }
+.logic-art .tile:nth-child(2) { transform: rotate(-4deg); position: relative; z-index: 1; }
+.logic-art .tile:nth-child(3) { transform: rotate(5deg); position: relative; z-index: 2; }
+.logic-art .t-ask { color: #6b3fc4; background: var(--sun); transform: rotate(13deg) translate3d(0, 10px, 0); position: relative; z-index: 3; }
+
+#screen-home[data-game="logic"] .mode-grid { margin-bottom: auto; }
+#screen-home[data-game="logic"] .logo-text { color: #c7a8ff; }
+body[data-fx="high"] #screen-home[data-game="logic"] .logo-text { text-shadow: 0 3px 0 #6b3fc4, 0 6px 14px rgba(0, 0, 0, .45); }
+#screen-home[data-game="logic"] .logo-mark { color: var(--sun); }
+
+.stage.is-logic { gap: 0; }
+.lg-play {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+}
+.lg-prompt { margin: 0; }
+.lg-prompt.is-story {
+  max-width: 36em;
+  margin: 0 auto;
+  font-size: 19px;
+  line-height: 1.35;
+}
+.lg-tok.is-inline {
+  display: inline-block;
+  width: 1.35em;
+  height: 1.35em;
+  margin: 0 .05em;
+  vertical-align: -.33em;
+}
+
+/* The board: dotted puzzle paper with a violet binding along the top. */
+.lg-card {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 26px 20px 20px;
+  border-radius: var(--r-lg);
+  color: var(--ink);
+  background-color: var(--paper);
+  background-image: radial-gradient(rgba(107, 63, 196, .26) 1.5px, transparent 1.8px);
+  background-size: 22px 22px;
+  background-position: 11px 11px;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, .3);
+  overflow: hidden;
+}
+.lg-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background: repeating-linear-gradient(90deg, #a06bff 0 18px, #8a52f0 18px 36px);
+}
+body[data-fx="high"] .lg-card { box-shadow: 0 6px 0 rgba(0, 0, 0, .3), 0 14px 30px rgba(0, 0, 0, .35); }
+body[data-fx="high"] .lg-card.pop { animation: pop-in .3s cubic-bezier(.34, 1.56, .64, 1) both; }
+
+.lg-tok, .lg-pix, .lg-poly, .lg-paper { display: block; width: 100%; height: 100%; }
+
+/* -------- cells and the slot being asked about */
+
+.lg-cell {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px;
+  border: 2px solid rgba(23, 18, 58, .12);
+  border-radius: 16px;
+  background: #fff;
+}
+.lg-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 4px dashed #a06bff;
+  color: #6b3fc4;
+  background: rgba(160, 107, 255, .1);
+}
+.lg-slot { position: relative; }
+.lg-slot b {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  font-size: 44px;
+  font-weight: 900;
+  line-height: 1;
+  transform: translate(-50%, -50%);
+}
+.lg-sizer { display: block; width: 100%; height: auto; }
+.lg-slot.is-ok { border: 4px solid #0f9c6d; background: #dcfbef; }
+body[data-fx="high"] .lg-slot.is-ok { animation: pop-in .28s cubic-bezier(.34, 1.56, .64, 1) both; }
+
+.lg-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+}
+/* A sequence stays on one line: the cells shrink to fit rather than wrap. */
+.lg-row .lg-cell { flex: 0 1 100px; min-width: 0; }
+.lg-row.is-mid .lg-cell { flex-basis: 88px; }
+.lg-row.is-long .lg-cell { flex-basis: 76px; padding: 5px; }
+.lg-row .lg-tok { height: auto; }
+
+/* -------- the odd one out: the things themselves are buttons */
+
+.lg-set {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  width: 100%;
+  max-width: 540px;
+}
+.lg-set.n5, .lg-set.n6 { max-width: 660px; }
+.lg-item {
+  flex: 0 0 calc(50% - 7px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 118px;
+  padding: 12px;
+  font-family: inherit;
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1.15;
+  color: var(--ink);
+  border: 3px solid rgba(23, 18, 58, .14);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 5px 0 rgba(23, 18, 58, .18);
+  cursor: pointer;
+  transition: transform .1s ease-out, box-shadow .1s ease-out, opacity .15s;
+}
+.lg-set.n5 .lg-item, .lg-set.n6 .lg-item { flex-basis: calc(33.33% - 10px); }
+.lg-item .lg-tok, .lg-item .lg-poly { width: 86px; height: 86px; }
+.lg-set.show-num .lg-item { font-size: 40px; }
+.lg-item:active { transform: translate3d(0, 5px, 0); box-shadow: none; }
+.lg-item:disabled { cursor: default; }
+.lg-item.ok { border-color: #0f9c6d; background: #dcfbef; box-shadow: 0 5px 0 #0f9c6d; }
+.lg-item.bad { border-color: #d6334c; background: #ffe1e6; box-shadow: 0 5px 0 #d6334c; }
+.lg-item.dim { opacity: .4; }
+body[data-fx="high"] .lg-item.ok { animation: pop-in .28s cubic-bezier(.34, 1.56, .64, 1) both; }
+body[data-fx="high"] .lg-item.bad { animation: shake .3s ease-in-out both; }
+.lg-item:focus-visible, .lg-tile:focus-visible { outline: 4px solid #6b3fc4; outline-offset: 3px; }
+@media (hover: hover) {
+  .lg-item:not(:disabled):hover { border-color: #a06bff; }
+  button.lg-tile:not(:disabled):hover { background: #e4d8ff; }
+}
+
+/* -------- grids and sudoku */
+
+.lg-grid {
+  display: grid;
+  border: 4px solid var(--ink);
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
+}
+.lg-grid.n3 { grid-template-columns: repeat(3, 96px); }
+.lg-grid.n4 { grid-template-columns: repeat(4, 80px); }
+.lg-gc {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 96px;
+  padding: 11px;
+  border-right: 2px solid rgba(23, 18, 58, .22);
+  border-bottom: 2px solid rgba(23, 18, 58, .22);
+  font-size: 46px;
+  font-weight: 900;
+  background: #fff;
+}
+.lg-grid.n4 .lg-gc { height: 80px; padding: 9px; font-size: 40px; }
+.lg-grid.n3 .lg-gc:nth-child(3n),
+.lg-grid.n4 .lg-gc:nth-child(4n) { border-right: 0; }
+.lg-grid.n3 .lg-gc:nth-last-child(-n+3),
+.lg-grid.n4 .lg-gc:nth-last-child(-n+4) { border-bottom: 0; }
+.lg-grid .lg-gc.bx-r { border-right: 4px solid var(--ink); }
+.lg-grid .lg-gc.bx-b { border-bottom: 4px solid var(--ink); }
+.lg-gc.lg-slot { border-top: 0; border-left: 0; border-radius: 0; border-style: solid; border-color: rgba(23, 18, 58, .22); background: #ece3ff; }
+.lg-gc.lg-slot b { font-size: 40px; }
+.lg-gc.lg-slot.is-ok { border-color: rgba(23, 18, 58, .22); background: #c9f7e4; color: var(--ink); }
+.lg-grid .lg-gc.lg-slot.bx-r { border-right: 4px solid var(--ink); }
+.lg-grid .lg-gc.lg-slot.bx-b { border-bottom: 4px solid var(--ink); }
+.lg-gc.is-hint:not(.lg-slot) { background: #fff3bf; }
+
+/* -------- analogies */
+
+.lg-analogy { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+.lg-pair {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 22px;
+  background: rgba(160, 107, 255, .12);
+}
+.lg-pair .lg-cell { width: 96px; height: 96px; }
+.lg-to { width: 34px; height: 34px; color: #6b3fc4; flex: none; }
+.lg-as { font-size: 17px; font-weight: 900; letter-spacing: .5px; text-transform: uppercase; color: #6b3fc4; }
+
+/* -------- the robot */
+
+.lg-robobox { display: flex; flex-direction: column; align-items: center; gap: 14px; max-width: 100%; }
+.lg-cmds { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.lg-cmd {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  color: #fff;
+  background: var(--ink);
+}
+.lg-cmd.is-turn { background: #6b3fc4; }
+.lg-cmd-i { width: 32px; height: 32px; }
+.lg-floor {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--cols), 76px);
+  border: 4px solid var(--ink);
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
+}
+.lg-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 76px;
+  padding: 4px;
+  font: inherit;
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+}
+.lg-tile.is-alt { background: #f1ebff; }
+button.lg-tile { cursor: pointer; }
+button.lg-tile:disabled { cursor: default; }
+.lg-tile.ok { background: var(--mint); }
+.lg-tile.bad { background: var(--coral); }
+.lg-robot, .lg-goal { display: block; width: 100%; height: 100%; }
+.lg-path { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+.lg-path polyline {
+  fill: none;
+  stroke: #6b3fc4;
+  stroke-width: 6px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 2px 12px;
+  vector-effect: non-scaling-stroke;
+  opacity: .85;
+}
+.lg-path circle { fill: #6b3fc4; }
+
+/* -------- figures to count, cubes, mirrors, pieces, paper */
+
+.lg-figure svg { display: block; width: 300px; max-width: 100%; height: auto; }
+.lg-figure.is-cubes svg { width: 300px; max-height: 42vh; }
+.cb-f { fill: #4cc9f0; stroke: #17123a; stroke-width: 2.5; stroke-linejoin: round; }
+.cb-t { fill: #d4f3ff; stroke: #17123a; stroke-width: 2.5; stroke-linejoin: round; }
+.cb-r { fill: #2a98c2; stroke: #17123a; stroke-width: 2.5; stroke-linejoin: round; }
+
+.lg-mirror { display: flex; align-items: center; justify-content: center; gap: 16px; }
+.lg-mirror.is-h { flex-direction: column; }
+.lg-mirror .lg-cell { width: 150px; height: 150px; padding: 8px; }
+.lg-glass {
+  align-self: stretch;
+  width: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #bfe9ff, #4cc9f0 45%, #e9f8ff 60%, #4cc9f0);
+  box-shadow: 0 0 0 2px #1d84a8;
+}
+.lg-mirror.is-h .lg-glass { width: auto; height: 12px; background: linear-gradient(180deg, #bfe9ff, #4cc9f0 45%, #e9f8ff 60%, #4cc9f0); }
+
+.lg-piece { width: 190px; height: 190px; padding: 12px; border-radius: 22px; background: #fff; border: 2px solid rgba(23, 18, 58, .12); }
+
+.lg-fold { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; }
+.lg-fold .lg-paper { width: 132px; height: 132px; }
+.lg-step { width: 30px; height: 30px; flex: none; color: #6b3fc4; }
+.lg-paperslot { width: 132px; height: 132px; border-radius: 16px; }
+.lg-paperslot.is-ok { padding: 6px; }
+.pp { fill: #fffbe8; stroke: #17123a; stroke-width: 3; }
+.pp.is-double { fill: #ffeeb0; }
+.pp-hole { fill: #17123a; }
+.pp-fold { stroke: #6b3fc4; stroke-width: 3; stroke-dasharray: 6 5; }
+.pp-arrow { fill: none; stroke: var(--coral); stroke-width: 4; stroke-linecap: round; }
+.pp-arrow-h { fill: var(--coral); }
+
+/* -------- balance scales */
+
+.lg-scales { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: center; gap: 8px 22px; }
+.lg-scalebox { padding: 4px 6px; border-radius: 20px; }
+.lg-scalebox.is-ask { background: rgba(160, 107, 255, .12); }
+.lg-scalebox svg { display: block; width: 250px; height: auto; }
+.lg-scales.n3 .lg-scalebox svg { width: 200px; }
+.sc-stand { fill: #4b4570; stroke: #17123a; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+.sc-beam { stroke: #17123a; stroke-width: 7; stroke-linecap: round; }
+.sc-pivot { fill: var(--sun); stroke: #17123a; stroke-width: 3; }
+.sc-cord { stroke: #4b4570; stroke-width: 2; }
+.sc-pan { fill: #d9d2f0; stroke: #17123a; stroke-width: 3; stroke-linejoin: round; }
+.sc-ask { fill: #fff; stroke: #a06bff; stroke-width: 3; stroke-dasharray: 4 3; }
+.sc-ask-t { font-family: var(--font); font-size: 22px; font-weight: 900; fill: #6b3fc4; text-anchor: middle; }
+
+/* -------- detective stories */
+
+.lg-story {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 34em;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.lg-story p {
+  margin: 0;
+  padding: 10px 16px;
+  border-left: 6px solid #a06bff;
+  border-radius: 12px;
+  background: #fff;
+}
+.lg-story p.is-intro { padding: 0 4px 4px; border: 0; background: none; font-weight: 600; color: #4b4570; }
+.lg-card.is-text { padding: 30px 28px 24px; }
+.lg-problem { margin: 0; max-width: 30em; font-size: 25px; font-weight: 700; line-height: 1.45; }
+
+/* -------- answering */
+
+.lg-side { flex: none; }
+.lg-answers { grid-template-columns: 1fr 1fr; }
+.lg-answers.n3, .lg-answers.n6 { grid-template-columns: repeat(3, 1fr); }
+.lg-answers .ans {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 70px;
+  padding: 8px 10px;
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1.15;
+}
+.lg-answers.opt-text .ans { font-size: 21px; }
+.lg-answers.is-text .ans { font-size: 18px; }
+.lg-answers .lg-tok, .lg-answers .lg-pix, .lg-answers .lg-poly, .lg-answers .lg-paper { width: 64px; height: 64px; }
+.lg-answers.opt-cmd { grid-template-columns: 1fr; }
+.lg-answers .lg-cmds { gap: 4px; }
+.lg-answers .lg-cmd { width: 34px; height: 34px; border-radius: 9px; }
+.lg-answers .lg-cmd-i { width: 24px; height: 24px; }
+.lg-answers .ans:disabled { cursor: default; }
+
+/* What went wrong, and why. */
+.lg-explain {
+  max-width: 100%;
+  padding: 10px 18px;
+  border: 2px solid rgba(15, 156, 109, .4);
+  border-radius: 18px;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: center;
+  color: #0b5c40;
+  background: rgba(46, 230, 168, .2);
+}
+.lg-explain p { margin: 0; }
+.lg-unit { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 8px; }
+.lg-unit .lg-tok { width: 42px; height: 42px; }
+.lg-unit.is-chain b { font-size: 26px; color: #0b5c40; }
+body[data-fx="high"] .lg-explain { animation: pop-in .3s cubic-bezier(.34, 1.56, .64, 1) both; }
+
+/* Result screen: what was missed, with the right answer. */
+.result-missed .missed-logic { width: auto; min-width: 74px; max-width: 150px; }
+.ml-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 56px;
+  min-height: 56px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--ink);
+  background: var(--paper);
+}
+.ml-tile svg { width: 46px; height: 46px; }
+.ml-tile .lg-cmds { flex-wrap: nowrap; gap: 2px; }
+.ml-tile .lg-cmd { width: 18px; height: 18px; border-radius: 5px; }
+.ml-tile .lg-cmd svg { width: 14px; height: 14px; }
+.missed-logic figcaption { font-size: 12px; font-weight: 800; line-height: 1.2; }
+
+body[data-fx="low"] .lg-card,
+body[data-fx="low"] .lg-item { box-shadow: none; }
+body[data-fx="low"] .lg-item:active { transform: scale(.97); }
+
+/* A tablet: everything on the board grows. */
+@media (min-width: 700px) and (min-height: 600px) {
+  .lg-row .lg-cell { flex-basis: 116px; }
+  .lg-row.is-mid .lg-cell { flex-basis: 100px; }
+  .lg-row.is-long .lg-cell { flex-basis: 84px; }
+  .lg-item { min-height: 140px; font-size: 30px; }
+  .lg-item .lg-tok, .lg-item .lg-poly { width: 104px; height: 104px; }
+  .lg-grid.n3 { grid-template-columns: repeat(3, 112px); }
+  .lg-grid.n4 { grid-template-columns: repeat(4, 92px); }
+  .lg-gc { height: 112px; padding: 13px; font-size: 54px; }
+  .lg-grid.n4 .lg-gc { height: 92px; font-size: 46px; }
+  .lg-pair .lg-cell { width: 112px; height: 112px; }
+  .lg-floor { grid-template-columns: repeat(var(--cols), 88px); }
+  .lg-tile { height: 88px; }
+  .lg-figure svg { width: 360px; }
+  .lg-figure.is-cubes svg { width: 360px; }
+  .lg-mirror .lg-cell { width: 180px; height: 180px; }
+  .lg-piece { width: 220px; height: 220px; }
+  .lg-fold .lg-paper, .lg-paperslot { width: 160px; height: 160px; }
+  .lg-scalebox svg { width: 290px; }
+  .lg-scales.n3 .lg-scalebox svg { width: 230px; }
+  .lg-story { font-size: 24px; }
+  .lg-problem { font-size: 28px; }
+  .lg-answers .ans { min-height: 78px; font-size: 34px; }
+  .lg-answers.opt-text .ans { font-size: 23px; }
+  .lg-answers.is-text .ans { font-size: 20px; }
+  .lg-answers .lg-tok, .lg-answers .lg-pix, .lg-answers .lg-poly, .lg-answers .lg-paper { width: 76px; height: 76px; }
+  .lg-explain { font-size: 20px; }
+}
+
+/* Portrait tablet: board and answers sit together in the middle. */
+@media (min-width: 700px) and (orientation: portrait) {
+  .lg-play { justify-content: center; }
+  .lg-card { flex: 0 1 auto; min-height: 46vh; }
+}
+
+/* Landscape tablet: the board on the left, answers on the right. */
+@media (orientation: landscape) and (min-width: 760px) and (max-height: 900px) {
+  .stage.is-logic { flex-direction: column; flex-wrap: nowrap; align-content: stretch; align-items: stretch; max-width: 1240px; }
+  .stage.is-logic .prompt { width: auto; }
+  .lg-play.kind-pick {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(290px, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    column-gap: 26px;
+    row-gap: 14px;
+  }
+  .lg-play.kind-pick .lg-prompt { grid-column: 1 / -1; grid-row: 1; }
+  .lg-play.kind-pick .lg-card { grid-column: 1; grid-row: 2; }
+  .lg-play.kind-pick .lg-side { grid-column: 2; grid-row: 2; align-self: center; }
+  .lg-side .answers { flex: none; }
+  .lg-answers.n2, .lg-answers.n3, .lg-answers.n4 { grid-template-columns: 1fr; gap: 12px; }
+  .lg-answers.n6 { grid-template-columns: 1fr 1fr; gap: 12px; }
+  /* Pictures read better as a 2 x 2 block of big tiles. */
+  .lg-answers.opt-tok.n4, .lg-answers.opt-pix.n4, .lg-answers.opt-poly.n4, .lg-answers.opt-paper.n4 { grid-template-columns: 1fr 1fr; }
+  .lg-answers.opt-tok .ans, .lg-answers.opt-pix .ans, .lg-answers.opt-poly .ans, .lg-answers.opt-paper .ans { min-height: 112px; }
+  .lg-answers.opt-tok .lg-tok, .lg-answers.opt-pix .lg-pix, .lg-answers.opt-poly .lg-poly, .lg-answers.opt-paper .lg-paper { width: 84px; height: 84px; }
+  .lg-answers.opt-cmd { grid-template-columns: 1fr; }
+  .lg-card { padding-left: 16px; padding-right: 16px; }
+}
+
+/* A phone: smaller pieces, same boards. */
+@media (max-width: 699px) {
+  .lg-card { padding: 22px 12px 14px; gap: 12px; }
+  .lg-row { gap: 6px; }
+  .lg-row .lg-cell { flex-basis: 70px; padding: 4px; border-radius: 12px; }
+  /* Nine or ten in a row would be too small to read: two lines instead. */
+  .lg-row.is-long { flex-wrap: wrap; }
+  .lg-row.is-long .lg-cell { flex: 0 0 calc(20% - 5px); }
+  .lg-slot b { font-size: 32px; }
+  .lg-set { gap: 10px; }
+  .lg-item { min-height: 92px; padding: 8px; font-size: 20px; }
+  .lg-item .lg-tok, .lg-item .lg-poly { width: 64px; height: 64px; }
+  .lg-set.show-num .lg-item { font-size: 32px; }
+  .lg-grid.n3 { grid-template-columns: repeat(3, 82px); }
+  .lg-grid.n4 { grid-template-columns: repeat(4, 68px); }
+  .lg-gc { height: 82px; padding: 9px; font-size: 40px; }
+  .lg-grid.n4 .lg-gc { height: 68px; padding: 7px; font-size: 34px; }
+  .lg-pair { padding: 8px 10px; gap: 6px; }
+  .lg-pair .lg-cell { width: 72px; height: 72px; }
+  .lg-to { width: 26px; height: 26px; }
+  .lg-floor { grid-template-columns: repeat(var(--cols), 60px); }
+  .lg-floor.w3, .lg-floor.w4 { grid-template-columns: repeat(var(--cols), 70px); }
+  .lg-tile { height: 60px; padding: 5px; }
+  .lg-floor.w3 .lg-tile, .lg-floor.w4 .lg-tile { height: 70px; }
+  .lg-cmd { width: 38px; height: 38px; border-radius: 10px; }
+  .lg-cmd-i { width: 26px; height: 26px; }
+  .lg-figure svg, .lg-figure.is-cubes svg { width: 250px; }
+  .lg-mirror { gap: 10px; }
+  .lg-mirror .lg-cell { width: 116px; height: 116px; padding: 6px; }
+  .lg-piece { width: 160px; height: 160px; }
+  .lg-fold { gap: 6px; }
+  .lg-fold .lg-paper, .lg-paperslot { width: 92px; height: 92px; }
+  .lg-step { width: 22px; height: 22px; }
+  .lg-scalebox svg { width: 200px; }
+  .lg-scales.n3 .lg-scalebox svg { width: 160px; }
+  .lg-story { font-size: 18px; gap: 8px; }
+  .lg-story p { padding: 8px 12px; }
+  .lg-card.is-text { padding: 26px 16px 16px; }
+  .lg-problem { font-size: 20px; }
+  .lg-answers .ans { min-height: 62px; font-size: 26px; }
+  .lg-answers.opt-text .ans { font-size: 18px; }
+  .lg-answers.is-text .ans { font-size: 16px; }
+  .lg-answers .lg-tok, .lg-answers .lg-pix, .lg-answers .lg-poly, .lg-answers .lg-paper { width: 52px; height: 52px; }
+  .lg-explain { padding: 8px 12px; font-size: 16px; }
 }

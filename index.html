@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#1b1145">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Steaguri!</title>
+<title>Steaguri, Atlas, Matematică &amp; Logică</title>
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./assets/icon-192.png">
 <link rel="apple-touch-icon" href="./assets/icon-192.png">
@@ -16,18 +16,79 @@
 
 <canvas id="fxcanvas" aria-hidden="true"></canvas>
 
+<!-- ============================================================= HUB -->
+<section class="screen is-active" id="screen-hub">
+  <header class="hub-head">
+    <div class="hub-title">
+      <span class="hub-kicker" data-i18n="hubKicker">Joacă și învață</span>
+      <h1 data-i18n="pickGame">Alege jocul</h1>
+    </div>
+    <button class="icon-btn" id="btn-hub-settings" aria-label="Setari"></button>
+  </header>
+
+  <div class="hub-grid">
+    <button class="game-card is-flags" id="hub-flags">
+      <span class="game-art flags-art" id="hub-flags-art" aria-hidden="true"></span>
+      <span class="game-body">
+        <span class="game-title" data-i18n="gameFlags">Steaguri</span>
+        <span class="game-sub" data-i18n="gameFlagsSub">Ghicește steagurile lumii</span>
+        <span class="game-foot">
+          <span class="game-tag" data-i18n="tagFlags">6 jocuri</span>
+          <span class="game-rec" id="hub-rec-flags" hidden></span>
+        </span>
+      </span>
+    </button>
+    <button class="game-card is-atlas" id="hub-atlas">
+      <span class="game-art atlas-art" id="hub-atlas-art" aria-hidden="true"></span>
+      <span class="game-body">
+        <span class="game-title" data-i18n="gameAtlas">Atlas</span>
+        <span class="game-sub" data-i18n="gameAtlasSub">Țări, provincii, munți, râuri, mări</span>
+        <span class="game-foot">
+          <span class="game-tag is-hard" data-i18n="tagAtlas">Mai greu</span>
+          <span class="game-rec" id="hub-rec-atlas" hidden></span>
+        </span>
+      </span>
+      <span class="game-loading"><i></i><span data-i18n="loadingMap">Se încarcă harta…</span></span>
+    </button>
+    <button class="game-card is-math" id="hub-math">
+      <span class="game-art math-art" id="hub-math-art" aria-hidden="true"></span>
+      <span class="game-body">
+        <span class="game-title" data-i18n="gameMath">Matematică</span>
+        <span class="game-sub" data-i18n="gameMathSub">Socoteli, ceasul și banii</span>
+        <span class="game-foot">
+          <span class="game-tag" data-i18n="tagMath">7–9 ani</span>
+          <span class="game-rec" id="hub-rec-math" hidden></span>
+        </span>
+      </span>
+    </button>
+    <button class="game-card is-logic" id="hub-logic">
+      <span class="game-badge" data-i18n="newBadge">Nou</span>
+      <span class="game-art logic-art" id="hub-logic-art" aria-hidden="true"></span>
+      <span class="game-body">
+        <span class="game-title" data-i18n="gameLogic">Logică</span>
+        <span class="game-sub" data-i18n="gameLogicSub">Șiruri, robotul și detectivi</span>
+        <span class="game-foot">
+          <span class="game-tag" data-i18n="tagLogic">7–10 ani</span>
+          <span class="game-rec" id="hub-rec-logic" hidden></span>
+        </span>
+      </span>
+    </button>
+  </div>
+</section>
+
 <!-- ============================================================ HOME -->
-<section class="screen is-active" id="screen-home">
+<section class="screen" id="screen-home">
   <header class="home-head">
+    <button class="icon-btn" id="btn-home-back" aria-label="Jocuri"></button>
     <div class="logo">
       <span class="logo-mark" aria-hidden="true"></span>
-      <h1 class="logo-text">STEAGURI</h1>
+      <h1 class="logo-text" id="logo-text">STEAGURI</h1>
     </div>
     <button class="icon-btn" id="btn-settings" aria-label="Setari"></button>
   </header>
 
   <div class="levelbar">
-    <div class="levelbar-badge"><span data-icon="trophy"></span> <b id="level-num">0</b> <span data-i18n="countries">țări</span></div>
+    <div class="levelbar-badge"><span data-icon="trophy"></span> <b id="level-num">0</b> <span id="level-unit">țări</span></div>
     <div class="levelbar-track"><div class="levelbar-fill" id="xp-fill"></div></div>
     <div class="levelbar-xp" id="xp-note"></div>
   </div>
@@ -145,6 +206,16 @@
 <script src="./js/modes/draw-free.js"></script>
 <script src="./js/modes/draw-build.js"></script>
 <script src="./js/modes/challenge.js"></script>
+<script src="./js/atlas/meta.js"></script>
+<script src="./js/atlas/geo.js"></script>
+<script src="./js/atlas/map.js"></script>
+<script src="./js/atlas/game.js"></script>
+<script src="./js/math/pictures.js"></script>
+<script src="./js/math/questions.js"></script>
+<script src="./js/math/game.js"></script>
+<script src="./js/logic/pictures.js"></script>
+<script src="./js/logic/questions.js"></script>
+<script src="./js/logic/game.js"></script>
 <script src="./js/app.js"></script>
 </body>
 </html>

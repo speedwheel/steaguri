@@ -225,7 +225,13 @@
   // ------------------------------------------------------------- screens
 
   var screens = ['hub', 'home', 'play', 'result', 'gallery'];
+  var currentScreen = 'hub';
+  var updateWaiting = false;
   function show(name) {
+    // A new version arrived during a game: switch to it on the way back to
+    // the menus, never in the middle of a run or over its results.
+    if (updateWaiting && (name === 'hub' || name === 'home')) { location.reload(); return; }
+    currentScreen = name;
     screens.forEach(function (s) {
       $('screen-' + s).classList.toggle('is-active', s === name);
     });
@@ -933,8 +939,23 @@
     });
 
     if ('serviceWorker' in navigator) {
+      // The service worker has installed a new version: tell it this page
+      // takes care of itself, then reload now, or after the game in progress.
+      navigator.serviceWorker.addEventListener('message', function (e) {
+        if (!e.data || e.data.type !== 'updated') return;
+        if (e.ports && e.ports[0]) e.ports[0].postMessage({ handled: true });
+        if (currentScreen === 'play' || currentScreen === 'result') updateWaiting = true;
+        else location.reload();
+      });
+      if (navigator.serviceWorker.startMessages) navigator.serviceWorker.startMessages();
       window.addEventListener('load', function () {
-        navigator.serviceWorker.register('./sw.js').catch(function () { /* offline is a bonus */ });
+        navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then(function (reg) {
+          // On the tablet the app is resumed far more often than reopened:
+          // look for a new version every time it comes back to the front.
+          document.addEventListener('visibilitychange', function () {
+            if (!document.hidden) reg.update().catch(function () {});
+          });
+        }).catch(function () { /* offline is a bonus */ });
       });
     }
   }

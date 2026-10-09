@@ -203,6 +203,14 @@ The service worker's cache name hashes file *contents*, so any edit followed by
 `build-sw.mjs` reaches an installed tablet on its next launch. (It used to hash
 only the file list, which meant edited code was never picked up.)
 
+Nobody has to force a refresh after a deploy. The new worker downloads every
+file past the HTTP cache (GitHub Pages lets browsers keep files for 10
+minutes), then moves every open page onto the new version: a page on a menu
+reloads at once, a page in the middle of a game waits until the player is
+back on a menu, and a page from before this mechanism is reloaded by the
+worker itself. The app also checks for a new version each time it comes back
+to the foreground, since a tablet app is resumed far more often than reopened.
+
 It fetches country metadata, Romanian/English names, ~400 flag PNGs and the
 country outlines, then writes everything into the repo. Downloads are cached in
 `tools/.cache/` and existing flag files are skipped, so re-runs are cheap.

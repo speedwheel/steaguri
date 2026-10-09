@@ -39,19 +39,52 @@ var ASSETS = ${JSON.stringify(assets, null, 2)};
 
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) {
+    // Straight from the network: the HTTP cache (GitHub Pages lets browsers
+    // keep files for 10 minutes) could hand back the previous version.
     // Individual misses must not fail the whole install.
     return Promise.all(ASSETS.map(function (url) {
-      return c.add(url).catch(function () {});
+      return fetch(new Request(url, { cache: 'reload' })).then(function (res) {
+        if (res.ok) return c.put(url, res);
+      }).catch(function () {});
     }));
   }).then(function () { return self.skipWaiting(); }));
 });
 
-self.addEventListener('activate', function (e) {
-  e.waitUntil(caches.keys().then(function (keys) {
-    return Promise.all(keys.map(function (k) {
-      return k === CACHE ? null : caches.delete(k);
+// Asks an open page whether it will move to the new version by itself. Pages
+// from before this version never answer.
+function handlesUpdate(client) {
+  return new Promise(function (resolve) {
+    var ch = new MessageChannel();
+    ch.port1.onmessage = function (e) { resolve(!!(e.data && e.data.handled)); };
+    setTimeout(function () { resolve(false); }, 1000);
+    client.postMessage({ type: 'updated' }, [ch.port2]);
+  });
+}
+
+// This replaced an older version: every open page moves onto it, so nobody
+// has to force a refresh. A page in the middle of a game says so and reloads
+// itself once the game is over; a page too old to answer is reloaded here.
+function moveOpenPages() {
+  return self.clients.matchAll({ type: 'window' }).then(function (list) {
+    return Promise.all(list.map(function (client) {
+      return handlesUpdate(client).then(function (handled) {
+        if (!handled && client.navigate) return client.navigate(client.url).catch(function () {});
+      });
     }));
-  }).then(function () { return self.clients.claim(); }));
+  });
+}
+
+self.addEventListener('activate', function (e) {
+  var replaced = false;
+  var ready = caches.keys().then(function (keys) {
+    var old = keys.filter(function (k) { return k !== CACHE; });
+    replaced = old.length > 0;
+    return Promise.all(old.map(function (k) { return caches.delete(k); }));
+  }).then(function () { return self.clients.claim(); });
+  e.waitUntil(ready);
+  // Only once activation is over: until then the browser holds every page
+  // request, so reloading a page from inside it would wait forever.
+  ready.then(function () { if (replaced) setTimeout(moveOpenPages, 0); });
 });
 
 self.addEventListener('fetch', function (e) {
